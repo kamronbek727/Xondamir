@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shaxmat Klubi CRM | Stabil v2.0</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Dependencies (face-api loaded lazily) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary: #fbbf24;
+            --primary-light: #fef3c7;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --border: rgba(255, 255, 255, 0.08);
+            --glass: rgba(15, 23, 42, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Essential Layout */
+        #app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        #sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--glass);
+            border-right: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            width: calc(100% - 280px);
+        }
+
+        @media (max-width: 1024px) {
+            #sidebar {
+                transform: translateX(-100%);
+                width: 300px;
+            }
+
+            #sidebar.active {
+                transform: translateX(0);
+            }
+
+            #main {
+                margin-left: 0;
+                width: 100%;
+                padding: 1rem;
+                padding-top: 5rem;
+            }
+
+            .mobile-header {
+                display: flex !important;
+            }
+        }
+
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4.5rem;
+            background: var(--glass);
+            border-bottom: 1px solid var(--border);
+            z-index: 999;
+            align-items: center;
+            padding: 0 1.5rem;
+            justify-content: space-between;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Sidebar Nav */
+        .nav-link {
+            padding: 0.9rem 1.5rem;
+            margin: 0.2rem 1rem;
+            border-radius: 1rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.1);
+        }
+
+        /* UI Blocks */
+        .card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 1rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .btn-ghost {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 0.6rem;
+        }
+
+        /* Forms */
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            color: #fff;
+            margin-top: 0.5rem;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        td {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* FaceID UI */
+        .face-camera-wrap {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            border-radius: 2rem;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            min-height: 420px;
+        }
+
+        .face-camera-wrap video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            min-height: 420px;
+            display: block;
+            /* Kamera ravshanligini oshirish */
+            filter: brightness(1.1) contrast(1.05);
+        }
+
+        .face-oval {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px;
+            height: 300px;
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            /* Qora overlay olib tashlandi - kamera endi ravshan ko'rinadi */
+            box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.25), inset 0 0 20px rgba(251, 191, 36, 0.15);
+            animation: ovalPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes ovalPulse {
+
+            0%,
+            100% {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.25), 0 0 15px rgba(251, 191, 36, 0.4);
+            }
+
+            50% {
+                border-color: #fef3c7;
+                box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.25), 0 0 30px rgba(251, 191, 36, 0.7);
+            }
+        }
+
+        /* FaceID loading bar */
+        #face-load-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+            background-size: 200% 100%;
+            animation: barSlide 1.5s linear infinite;
+            z-index: 9998;
+        }
+
+        @keyframes barSlide {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        /* Badge */
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        /* Smooth Transition */
+        .animate-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(251, 191, 36, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Diagnosis Panel Styles */
+        .diag-panel {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            text-align: left;
+            color: var(--text-dim);
+            backdrop-filter: blur(10px);
+        }
+        .diag-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .diag-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 2px;
+        }
+        .status-val {
+            color: var(--text);
+            font-weight: 500;
+        }
+        .status-val.true { color: var(--success); }
+        .status-val.false { color: var(--danger); }
+
+        /* Checklist Styles */
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .checklist-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader"
+        style="position:fixed; inset:0; background:var(--bg); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div class="spinner"></div>
+        <p style="margin-top:1.5rem; color:var(--text-dim);">Tizim barqarorlashtirilmoqda...</p>
+    </div>
+
+    <div id="app" style="display:none;">
+
+        <!-- Auth View -->
+        <div id="view-auth"
+            style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:1.5rem;">
+            <div class="card" style="width:100%; max-width:420px; text-align:center;">
+                <div
+                    style="width:80px; height:80px; margin:0 auto 1.5rem; background:linear-gradient(135deg,#fbbf24,#f59e0b); border-radius:1.2rem; display:flex; align-items:center; justify-content:center; font-size:2.2rem; box-shadow:0 8px 32px rgba(251,191,36,0.3);">
+                    ♟️</div>
+                <h2 style="margin-bottom:0.5rem;">Xush kelibsiz</h2>
+                <p style="color:var(--text-dim); margin-bottom:2rem;">Admin panelga kirish</p>
+                <div style="text-align:left;">
+                    <label>Login</label><input type="text" id="auth-user" class="form-control" placeholder="admin">
+                    <label style="margin-top:1rem; display:block;">Parol</label><input type="password" id="auth-pass"
+                        class="form-control" placeholder="••••">
+                    <button onclick="Engine.login()" class="btn btn-primary"
+                        style="width:100%; margin-top:2rem; justify-content:center;">Tizimga kirish</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Shell -->
+        <div id="view-shell" style="display:none; width:100%;">
+            <header class="mobile-header">
+                <button class="btn btn-ghost" onclick="Engine.toggleSidebar()"><i data-lucide="menu"></i></button>
+                <h3 style="font-weight:700; color:var(--primary);">SHAXMAT CRM</h3>
+                <div style="width:40px;"></div>
+            </header>
+
+            <aside id="sidebar">
+                <div
+                    style="padding:2rem; display:flex; align-items:center; gap:1rem; border-bottom:1px solid var(--border);">
+                    <div
+                        style="width:42px; height:42px; background:linear-gradient(135deg,#fbbf24,#f59e0b); border-radius:0.8rem; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;">
+                        ♟️</div>
+                    <h2 style="font-size:1.4rem; font-weight:800; tracking:-0.02em;">CHESS CLUB</h2>
+                </div>
+                <nav id="nav-list" style="flex:1; padding-top:1rem; overflow-y:auto;">
+                    <!-- Nav Items Rendered Here -->
+                </nav>
+                <div style="padding:1.5rem; border-top:1px solid var(--border);">
+                    <div class="nav-link" onclick="Engine.logout()" style="margin:0; color:var(--danger);"><i
+                            data-lucide="log-out"></i> Chiqish</div>
+                </div>
+            </aside>
+
+            <main id="main">
+                <div id="render-target" class="animate-in"></div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG & CONSTANTS ---
+        const TG_BOT_TOKEN = '8718819420:AAEsc4a5H_UcfDetGFoHh3tzXHOJAIRCD3s';
+        const TG_URL = `https://api.telegram.org/bot${TG_BOT_TOKEN}`;
+
+        // --- DATABASE AGENT (SUPABASE SYNCED) ---
+        const SUPABASE_URL = 'https://wfheqfctwhmeldngvafi.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_o8_4YuUyllDnnwicyphCFQ_h5edg8co';
+        let supabaseClient = null;
+        if (typeof supabase !== 'undefined') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+
+        const DB = {
+            local: null,
+            async init() {
+                let validData = null;
+                try {
+                    if (supabaseClient) {
+                        const { data, error } = await supabaseClient.from('db_state').select('data').eq('id', 'main').single();
+                        if (data && data.data && data.data.meta) {
+                            validData = data.data;
+                        }
+                    }
+                } catch (e) { console.warn('Supabase fetch error, fallback to local', e); }
+
+                if (validData) {
+                    this.local = validData;
+                    localStorage.setItem('chess_stabil_db', JSON.stringify(this.local));
+                } else {
+                    const cache = localStorage.getItem('chess_stabil_db');
+                    if (cache && JSON.parse(cache).meta) {
+                        this.local = JSON.parse(cache);
+                        if (supabaseClient) supabaseClient.from('db_state').upsert({ id: 'main', data: this.local }).then();
+                    } else {
+                        this.local = {
+                            meta: { lastResetMonth: new Date().getMonth(), lastTgUpdateId: 0 },
+                            admins: [
+                                { id: 'a1', user: 'boshadmin', pass: '123', role: 'BOSHADMIN' },
+                                { id: 'a2', user: 'admin', pass: '123', role: 'ADMIN' }
+                            ],
+                            students: [],
+                            groups: [],
+                            group_members: [],
+                            sessions: [],
+                            attendance: [],
+                            absences: [],
+                            coin_ledger: [],
+                            requests: [],
+                            settings: { monthlyLessons: 12, lessonCost: 50000, boshadminTgChatId: '' },
+                            transactions: []
+                        };
+                        if (supabaseClient) {
+                            supabaseClient.from('db_state').upsert({ id: 'main', data: this.local }).then();
+                        }
+                    }
+                }
+                this.checkMonthReset();
+            },
+            get() {
+                if (!this.local) this.local = JSON.parse(localStorage.getItem('chess_stabil_db'));
+                return this.local;
+            },
+            save(data) {
+                if (!data.meta) data.meta = {};
+                data.meta.lastModified = Date.now();
+                this.local = data;
+                localStorage.setItem('chess_stabil_db', JSON.stringify(data));
+                if (supabaseClient) {
+                    supabaseClient.from('db_state').upsert({ id: 'main', data }).then();
+                }
+            },
+            async sync() {
+                if (!supabaseClient) return;
+                try {
+                    const { data } = await supabaseClient.from('db_state').select('data').eq('id', 'main').single();
+                    if (data && data.data && data.data.meta) {
+                        const rMod = data.data.meta.lastModified || 0;
+                        const lMod = this.local?.meta?.lastModified || 0;
+                        if (rMod > lMod) {
+                            this.local = data.data;
+                            localStorage.setItem('chess_stabil_db', JSON.stringify(this.local));
+                            if (!Swal.isVisible() && Engine.user) {
+                                const activeLink = document.querySelector('.nav-link.active');
+                                if (activeLink) Engine.navigate(activeLink.dataset.id);
+                            }
+                        }
+                    }
+                } catch (e) { }
+            },
+            // Mavjud DB ga settings.boshadminTgChatId yo'q bo'lsa qo'shamiz
+            migrate() {
+                const db = this.get();
+                let changed = false;
+                if (!db.meta) { db.meta = { lastResetMonth: 0, lastTgUpdateId: 0 }; changed = true; }
+                if (!db.meta.lastTgUpdateId) { db.meta.lastTgUpdateId = 0; changed = true; }
+                if (!db.group_members) { db.group_members = []; changed = true; }
+                if (!db.sessions) { db.sessions = []; changed = true; }
+                if (!db.absences) { db.absences = []; changed = true; }
+                if (!db.coin_ledger) { db.coin_ledger = []; changed = true; }
+
+                if (changed && db.students) {
+                    db.students.forEach(s => {
+                        if (s.groupId && !db.group_members.find(x => x.studentId === s.id && x.groupId === s.groupId)) {
+                            db.group_members.push({ id: crypto.randomUUID(), studentId: s.id, groupId: s.groupId });
+                        }
+                    });
+                }
+
+                if (!db.settings.boshadminTgChatId) { db.settings.boshadminTgChatId = ''; changed = true; }
+                // boshadmin ni yangilaymiz
+                const ba = db.admins.find(a => a.role === 'BOSHADMIN');
+                if (ba && ba.user === 'root') { ba.user = 'boshadmin'; ba.pass = '123'; changed = true; }
+                if (changed) this.save(db);
+            },
+            checkMonthReset() {
+                const db = this.get();
+                const currentMonth = new Date().getMonth();
+                if (db.meta.lastResetMonth !== currentMonth) {
+                    db.students.forEach(s => { s.balance = 0; s.monthlyPoints = 0; });
+                    db.meta.lastResetMonth = currentMonth;
+                    this.save(db);
+                }
+            }
+        };
+
+        // --- TELEGRAM BOT (LONG-POLLING) ---
+        const TGBot = {
+            async poll() {
+                const db = DB.get();
+                try {
+                    const res = await fetch(`${TG_URL}/getUpdates?offset=${db.meta.lastTgUpdateId + 1}`);
+                    const json = await res.json();
+                    if (json.ok && json.result.length > 0) {
+                        for (let update of json.result) {
+                            db.meta.lastTgUpdateId = update.update_id;
+                            if (update.message && update.message.text) {
+                                await this.handleMessage(update.message, db);
+                            }
+                            if (update.callback_query) {
+                                await this.handleCallback(update.callback_query, db);
+                            }
+                        }
+                        DB.save(db);
+                    }
+                } catch (e) { }
+            },
+            async handleMessage(msg, db) {
+                const chatId = msg.chat.id;
+                const text = msg.text.trim();
+
+                if (text === '/start') {
+                    this.send(chatId, "Iltimos, farzandingizning 6 xonali ID (studentCode) sini kiriting:");
+                    return;
+                }
+                const s = db.students.find(x => x.studentCode === text);
+                if (s) {
+                    this.send(chatId, `Ushbu o'quvchi ${s.name} ${s.surname} mi?`, JSON.stringify({
+                        inline_keyboard: [[
+                            { text: "✅ HA", callback_data: `C_YES_${s.id}` },
+                            { text: "❌ YO'Q", callback_data: `C_NO` }
+                        ]]
+                    }));
+                } else {
+                    this.send(chatId, "XATO! Bunday ID raqamli o'quvchi topilmadi. Qaytadan kiriting yoki adminga murojaat qiling.");
+                }
+            },
+            async handleCallback(cb, db) {
+                const chatId = cb.message.chat.id;
+                const data = cb.data;
+                if (data.startsWith('C_YES_')) {
+                    const sid = data.split('_')[2];
+                    const s = db.students.find(x => x.id === sid);
+                    if (s) {
+                        if (!s.tgChatIds) s.tgChatIds = [];
+                        if (!s.tgChatIds.includes(chatId)) s.tgChatIds.push(chatId);
+                        this.send(chatId, `✅ Muvaffaqiyatli! ${s.name} ${s.surname} profiliga bog'landingiz.`);
+                    }
+                } else if (data === 'C_NO') {
+                    this.send(chatId, "Iltimos, farzandingizning to'g'ri ID sini qaytadan kiriting:");
+                }
+            },
+            async send(chatId, text, reply_markup = null) {
+                const body = { chat_id: chatId, text, parse_mode: 'HTML' };
+                if (reply_markup) body.reply_markup = reply_markup;
+                await fetch(`${TG_URL}/sendMessage`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            },
+            async notifyAttendance(studentId, status, db, extraText = '') {
+                const s = db.students.find(x => x.id === studentId);
+                if (!s || !s.tgChatIds || s.tgChatIds.length === 0) return;
+
+                const pts = status === 'KELDI' ? 5 : status === 'KECHIKDI' ? 3 : 0;
+                let text = `♟️ <b>DAVOMAT</b>\n👤 O'quvchi: ${s.name} ${s.surname}\n`;
+                if (status === 'KELMADI') {
+                    text += `📍 Holat: <b>KELMADI</b>\n💡 Coin: +0\n${extraText}`;
+                } else {
+                    const tStr = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                    text += `⏰ Vaqt: ${tStr}\n📍 Holat: <b>${status}</b>\n🏆 Coin: +${pts}\n`;
+                }
+
+                for (let cid of s.tgChatIds) {
+                    await this.send(cid, text);
+                }
+            }
+        };
+
+        // --- CORE ENGINE ---
+        const Engine = {
+            user: null,
+            views: [
+                { id: 'dashboard', label: 'Bosh sahifa', icon: 'layout-dashboard', role: 'ALL' },
+                { id: 'students', label: 'O\'quvchilar', icon: 'users', role: 'ALL' },
+                { id: 'groups', label: 'Guruhlar', icon: 'book-open', role: 'ALL' },
+                { id: 'attendance', label: 'Davomat', icon: 'calendar-check', role: 'ALL' },
+                { id: 'absent', label: 'Kelmaganlar', icon: 'user-x', role: 'ALL' },
+                { id: 'frozen', label: 'Muzlatilganlar', icon: 'snowflake', role: 'ALL' },
+                { id: 'rating', label: 'Reyting', icon: 'trophy', role: 'ALL' },
+                { id: 'payments', label: 'To\'lovlar', icon: 'banknote', role: 'ALL' },
+                { id: 'requests', label: 'So\'rovlar', icon: 'clipboard-list', role: 'BOSHADMIN' },
+                { id: 'settings-oy', label: 'Oy sozlamalari', icon: 'calendar-days', role: 'BOSHADMIN' },
+                { id: 'settings-pass', label: 'Sozlamalar', icon: 'key-round', role: 'ALL' },
+                { id: 'telegram', label: 'Telegram Xabar', icon: 'send', role: 'BOSHADMIN' }
+            ],
+
+            faceModelsLoaded: false,
+            faceModelsLoading: false,
+
+            async init() {
+                await DB.init();
+                DB.migrate(); // Eski DB ni yangi formatga o'tkazish
+                // Face models yuklanmaydi — faqat FaceID ishlatilganda yuklanadi
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('view-auth').style.display = 'flex';
+
+                // Telegram polling start
+                setInterval(() => TGBot.poll(), 3500);
+                setInterval(() => DB.sync(), 3000);
+            },
+
+            async loadFaceModels() {
+                if (this.faceModelsLoaded) return true;
+                if (this.faceModelsLoading) return false;
+                this.faceModelsLoading = true;
+
+                // face-api.js kutubxonasini dinamik yuklash
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js';
+                    s.onload = resolve;
+                    s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+
+                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+                await Promise.all([
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]);
+                this.faceModelsLoaded = true;
+                this.faceModelsLoading = false;
+                return true;
+            },
+
+            login() {
+                const u = document.getElementById('auth-user').value;
+                const p = document.getElementById('auth-pass').value;
+                const db = DB.get();
+                const admin = db.admins.find(x => x.user === u && x.pass === p);
+
+                if (admin) {
+                    this.user = admin;
+                    document.getElementById('view-auth').style.display = 'none';
+                    document.getElementById('view-shell').style.display = 'block';
+                    this.renderNav();
+                    this.navigate('dashboard');
+                } else {
+                    Swal.fire('Xato', 'Login yoki parol noto\'g\'ri', 'error');
+                }
+            },
+
+            logout() { location.reload(); },
+
+            renderNav() {
+                const nav = document.getElementById('nav-list');
+                nav.innerHTML = this.views
+                    .filter(v => v.role === 'ALL' || v.role === this.user.role)
+                    .map(v => `<div class="nav-link" data-id="${v.id}" onclick="Engine.navigate('${v.id}')"><i data-lucide="${v.icon}"></i> ${v.label}</div>`)
+                    .join('');
+                lucide.createIcons();
+            },
+
+            navigate(viewId) {
+                const target = document.getElementById('render-target');
+                target.innerHTML = '';
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.id === viewId));
+
+                const db = DB.get();
+                switch (viewId) {
+                    case 'dashboard': Views.dashboard(target, db); break;
+                    case 'students': Views.students(target, db); break;
+                    case 'groups': Views.groups(target, db); break;
+                    case 'attendance': Views.attendance(target, db); break;
+                    case 'absent': Views.absent(target, db); break;
+                    case 'frozen': Views.frozen(target, db); break;
+                    case 'rating': Views.rating(target, db); break;
+                    case 'payments': Views.payments(target, db); break;
+                    case 'requests': Views.requests(target, db); break;
+                    case 'settings-oy': Views.settingsOy(target, db); break;
+                    case 'settings-pass': Views.settingsPass(target, db); break;
+                    case 'telegram': Views.telegram(target, db); break;
+                }
+                lucide.createIcons();
+                document.getElementById('sidebar').classList.remove('active');
+            },
+
+            toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        };
+
+        // --- VIEW RENDERERS ---
+        const Views = {
+            dashboard(t, db) {
+                t.innerHTML = `
+                    <h2 style="margin-bottom:1.5rem;">Dashboard</h2>
+                    <div class="grid">
+                        <div class="card" style="border-left:4px solid var(--primary)">
+                            <h3 style="color:var(--text-dim); font-size:1rem;">Jami O'quvchilar</h3>
+                            <div style="font-size:2rem; font-weight:bold; margin-top:0.5rem;">${db.students.filter(x => x.status === 'active').length}</div>
+                        </div>
+                        <div class="card" style="border-left:4px solid var(--success)">
+                            <h3 style="color:var(--text-dim); font-size:1rem;">Faol Guruhlar</h3>
+                            <div style="font-size:2rem; font-weight:bold; margin-top:0.5rem;">${db.groups.length}</div>
+                        </div>
+                        <div class="card" style="border-left:4px solid var(--warning)">
+                            <h3 style="color:var(--text-dim); font-size:1rem;">Bugungi Darslar</h3>
+                            <div style="font-size:2rem; font-weight:bold; margin-top:0.5rem;">${db.sessions.filter(s => s.date === new Date().toISOString().split('T')[0]).length}</div>
+                        </div>
+                        <div class="card" style="border-left:4px solid var(--danger)">
+                            <h3 style="color:var(--text-dim); font-size:1rem;">Kutilayotgan To'lovlar</h3>
+                            <div style="font-size:2rem; font-weight:bold; margin-top:0.5rem; color:${db.students.reduce((a, b) => a + (b.balance || 0), 0) < 0 ? 'var(--danger)' : 'var(--success)'}">${db.students.reduce((a, b) => a + (b.balance || 0), 0)} UZS</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            students(t, db) {
+                t.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <h2>O'quvchilar Ro'yxati</h2>
+                        <button onclick="Actions.openStudentModal()" class="btn btn-primary"><i data-lucide="plus"></i> Qo'shish</button>
+                    </div>
+                    <div class="card">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>F.I.O</th><th>Guruh</th><th>Balans</th><th>FaceID</th><th>Amallar</th></tr></thead>
+                                <tbody>
+                                    ${db.students.map(s => `
+                                        <tr>
+                                            <td><strong>${s.name} ${s.surname}</strong><br><small style="color:var(--text-dim);">ID: ${s.id}</small></td>
+                                            <td>${db.group_members.find(g => g.studentId === s.id) ? db.groups.find(g => g.id === db.group_members.find(x => x.studentId === s.id).groupId)?.name || 'Yo\'q' : 'Yo\'q'}</td>
+                                            <td style="color:${s.balance < 0 ? 'var(--danger)' : 'var(--success)'}">${s.balance} so'm</td>
+                                            <td><i data-lucide="${s.faceData ? 'check-circle' : 'circle'}" style="color:${s.faceData ? 'var(--success)' : 'var(--text-dim)'}"></i></td>
+                                            <td>
+                                                <div style="display:flex; gap:0.5rem;">
+                                                    <button onclick="Actions.viewProfile('${s.id}')" class="btn btn-ghost btn-sm"><i data-lucide="eye"></i></button>
+                                                    <button onclick="Actions.editStudent('${s.id}')" class="btn btn-ghost btn-sm"><i data-lucide="edit"></i></button>
+                                                    <button onclick="Actions.deleteStudent('${s.id}')" class="btn btn-danger btn-sm"><i data-lucide="trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="5" style="text-align:center; padding:2rem;">O\'quvchilar mavjud emas</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            groups(t, db) {
+                t.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                        <h2>Guruhlar</h2>
+                        <button onclick="Actions.openGroupModal()" class="btn btn-primary"><i data-lucide="plus"></i> Yangi guruh</button>
+                    </div>
+                    <div class="grid">
+                        ${db.groups.map(g => `
+                            <div class="card">
+                                <h3 style="color:var(--primary)">${g.name}</h3>
+                                <p style="margin-top:0.5rem; font-size:0.9rem; color:var(--text-dim);">${g.days.join(', ')} | ${g.start} - ${g.endTime || '18:00'}</p>
+                                <div style="margin-top:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>${db.group_members.filter(s => s.groupId === g.id).length} o'quvchi</span>
+                                    <button onclick="Actions.manageGroup('${g.id}')" class="btn btn-ghost btn-sm">Boshqarish</button>
+                                </div>
+                            </div>
+                        `).join('') || '<p>Guruhlar yo\'q</p>'}
+                    </div>
+                `;
+            },
+
+            attendance(t, db) {
+                // history ni tuzish
+                const recentSessions = [...db.sessions].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 50); // Just order by id to sort roughly by creation, ideally by timestamp
+
+                t.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                        <h2>Davomat Olish</h2>
+                    </div>
+                    <div class="card" id="att-app" style="text-align:center;">
+                        <div id="att-setup">
+                            <i data-lucide="scan-face" style="width:64px; height:64px; color:var(--primary); margin-bottom:1rem;"></i>
+                            <h3>Yangi Davomat</h3>
+                            <div style="text-align:left; margin-top:1.5rem;">
+                                <label>Guruhni tanlang</label>
+                                <select id="att-gid" class="form-control">${db.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}</select>
+                                <label style="margin-top:1rem; display:block">Sana</label>
+                                <input type="date" id="att-date" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:2rem;">
+                                <button onclick="FaceID.start()" class="btn btn-primary" style="justify-content:center;"><i data-lucide="camera"></i> FaceID</button>
+                                <button onclick="Actions.manualAttendance()" class="btn btn-ghost" style="justify-content:center; border:1px solid var(--border)"><i data-lucide="list"></i> Qo'lda olish</button>
+                            </div>
+                        </div>
+                        <div id="att-scan" style="display:none;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h3 id="att-status" style="margin:0;">Kamera tayyorlanmoqda...</h3>
+                                <div style="display:flex; gap:0.5rem">
+                                    <button onclick="FaceID.toggleCam()" class="btn btn-ghost btn-sm"><i data-lucide="refresh-cw"></i></button>
+                                    <button onclick="FaceID.stop()" class="btn btn-danger btn-sm"><i data-lucide="x"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Iframe Warning -->
+                            <div id="iframe-warn" style="display:none; background:rgba(239, 68, 68, 0.2); color:var(--danger); padding:1rem; border-radius:1rem; margin-bottom:1rem; text-align:left;">
+                                <div style="display:flex; align-items:center; gap:0.5rem; font-weight:bold;">
+                                    <i data-lucide="alert-triangle"></i> Iframe ichida kamera ishlamasligi mumkin
+                                </div>
+                                <button onclick="window.open(location.href, '_blank')" class="btn btn-primary btn-sm" style="margin-top:0.5rem; width:100%; justify-content:center;">Yangi tabda ochish (Open in new tab)</button>
+                            </div>
+
+                            <div class="face-camera-wrap" style="position:relative;">
+                                <video id="att-video" autoplay muted playsinline></video>
+                                <div class="face-oval"></div>
+                            </div>
+
+                            <h2 id="att-name" style="margin-top:1.5rem; color:var(--primary); min-height:40px;"></h2>
+                            <button id="btn-identify" onclick="FaceID.identify()" class="btn btn-primary" style="margin-top:0.5rem; width:100%; justify-content:center; padding:1.2rem; font-size:1.1rem; gap:0.5rem;"><i data-lucide="scan-face"></i> Yuzni Skanerlash (Identify)</button>
+                            
+                            <!-- Diagnosis Panel -->
+                            <div class="diag-panel">
+                                <h4 style="color:var(--primary); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.5rem; font-size:0.75rem;"><i data-lucide="activity" style="width:14px;"></i> DIAGNOSIS PANEL</h4>
+                                <div class="diag-grid">
+                                    <div class="diag-item">HTTPS status: <span id="diag-https" class="status-val">-</span></div>
+                                    <div class="diag-item">Iframe ichidami: <span id="diag-iframe" class="status-val">-</span></div>
+                                    <div class="diag-item">Camera permission state: <span id="diag-perm" class="status-val">-</span></div>
+                                    <div class="diag-item">videoWidth / videoHeight: <span id="diag-res" class="status-val">-</span></div>
+                                    <div class="diag-item">stream tracks count: <span id="diag-tracks" class="status-val">-</span></div>
+                                    <div class="diag-item">Selected camera: <span id="diag-cam" class="status-val">-</span></div>
+                                    <div class="diag-item">candidatesCount: <span id="diag-candidates" class="status-val">-</span></div>
+                                    <div class="diag-item">lastIdentifyRequestTime: <span id="diag-last-req" class="status-val">-</span></div>
+                                    <div class="diag-item">lastStatusDecision: <span id="diag-last-decision" class="status-val">-</span></div>
+                                </div>
+                                <div style="margin-top:0.5rem; border-top:1px solid var(--border); padding-top:0.5rem;">
+                                    <div>getUserMedia error: <span id="diag-error" style="color:var(--danger); font-family:monospace;">-</span></div>
+                                    <div style="margin-top:0.2rem;">lastIdentifyResponse (raw): <pre id="diag-last-res" style="background:rgba(0,0,0,0.5); padding:0.4rem; border-radius:0.4rem; font-size:0.7rem; max-height:60px; overflow-y:auto; color:var(--text-dim);">-</pre></div>
+                                </div>
+                            </div>
+
+                            <!-- Manual Fallback Dropdown (Will be shown if identify fails) -->
+                            <div id="manual-fallback" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:1rem; text-align:left;">
+                                <label style="font-size:0.85rem; color:var(--primary)">Fallback: Bu kim? (Manual Confirm)</label>
+                                <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+                                    <select id="manual-student-select" class="form-control" style="margin-top:0; border-color:var(--primary)"></select>
+                                    <button onclick="FaceID.confirmManual()" class="btn btn-primary btn-sm">OK</button>
+                                </div>
+                            </div>
+
+                            <button onclick="FaceID.stop(); Actions.manualAttendance()" class="btn btn-ghost" style="margin-top:1.5rem; width:100%; justify-content:center;">Darsni Yakunlash / Qo'lda Olish</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Test Checklist -->
+                    <div class="card" style="margin-top:2rem; border-color:var(--primary); background:rgba(251, 191, 36, 0.03);">
+                        <h3 style="margin-bottom:1rem; color:var(--primary); font-size:1.1rem; display:flex; align-items:center; gap:0.5rem;"><i data-lucide="check-square"></i> QUICK TEST CHECKLIST</h3>
+                        <div style="display:flex; flex-direction:column; text-align:left;">
+                            <div class="checklist-item"><input type="checkbox" id="chk-video" disabled> <span>Kamera video chiqdi (videoWidth > 0)</span></div>
+                            <div class="checklist-item"><input type="checkbox" id="chk-candidates" disabled> <span>candidatesCount > 0</span></div>
+                            <div class="checklist-item"><input type="checkbox" id="chk-no-face" disabled> <span>Kadrda yuz yo'q bo'lsa "YUZ TOPILMADI" chiqdi</span></div>
+                            <div class="checklist-item"><input type="checkbox" id="chk-identify" disabled> <span>Yuz bo'lsa identify chaqildi</span></div>
+                            <div class="checklist-item"><input type="checkbox" id="chk-unknown" disabled> <span>UNKNOWN bo'lsa davomat yozilmadi</span></div>
+                            <div class="checklist-item"><input type="checkbox" id="chk-match" disabled> <span>Match bo'lsa status to'g'ri chiqdi (KELDI/KECHIKDI)</span></div>
+                            <div class="checklist-item"><input type="checkbox" id="chk-saved" disabled> <span>attendance_records saqlandi</span></div>
+                        </div>
+                    </div>
+
+                    <!-- No Face Results (Hidden list for groups with no faces) -->
+                    <div id="no-face-list" class="card" style="display:none; margin-top:1rem; border-color:var(--danger);">
+                        <h3 style="color:var(--danger); font-size:1rem;">FaceID ro‘yxatdan o‘tgan o‘quvchi yo‘q</h3>
+                        <div id="no-face-names" style="margin-top:1rem; font-size:0.85rem; text-align:left; color:var(--text-dim);"></div>
+                    </div>
+                    
+                    <h3 style="margin-top:3rem; margin-bottom:1rem;">Tarix (Sessiyalar)</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Sana</th><th>Guruh</th><th>Holat</th><th>Amal</th></tr></thead>
+                            <tbody>
+                                ${recentSessions.map(sess => {
+                    const g = db.groups.find(x => x.id === sess.groupId) || { name: 'Noma\'lum' };
+                    const count = db.attendance.filter(a => a.sessionId === sess.id).length;
+                    return `
+                                        <tr>
+                                            <td>${sess.date}</td>
+                                            <td>${g.name} (${sess.startTime}-${sess.endTime})</td>
+                                            <td>${sess.isClosed ? '<span class="badge badge-success">YOPILGAN</span>' : '<span class="badge badge-warning">OCHIQ</span>'} <br><small>${count} ta belgilandi</small></td>
+                                            <td>
+                                                <button onclick="document.getElementById('att-gid').value='${sess.groupId}'; document.getElementById('att-date').value='${sess.date}'; Actions.manualAttendance(); document.getElementById('att-setup').scrollIntoView();" class="btn btn-ghost btn-sm">Ko'rish / Tahrirlash</button>
+                                            </td>
+                                        </tr>
+                                    `;
+                }).join('') || '<tr><td colspan="4" style="text-align:center;">Sessiyalar yo\'q</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            absent(t, db) {
+                // Show Open Absences
+                const absences = db.absences || [];
+                // Only show unresolved justifiable absentees where status === 'OPEN'
+                const openAbs = absences.filter(x => x.status === 'OPEN');
+                t.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2>Kelmadi (Sababli) Qoplanishlar</h2>
+                    </div>
+                    <div class="card" style="margin-top:1.5rem;">
+                        <p style="color:var(--text-dim); margin-bottom:1rem;">Sababli kelmagan o'quvchilar ushbu ro'yxatga avtomatik tushib qoladi. Dars qoplangach, yopib yuboring.</p>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>O'quvchi</th><th>Qaysi Sana</th><th>Amal</th></tr></thead>
+                                <tbody>
+                                    ${openAbs.map(a => {
+                    const s = db.students.find(x => x.id === a.studentId) || { name: '-', surname: '' };
+                    return `<tr>
+                                            <td><strong>${s.name} ${s.surname}</strong></td>
+                                            <td>${a.date}</td>
+                                            <td><button onclick="Actions.resolveAbsent('${a.id}')" class="btn btn-success btn-sm">Qoplandi (Yopish)</button></td>
+                                        </tr>`;
+                }).join('') || '<tr><td colspan="3" style="text-align:center;">Qoplanishi kerak bo\'lganlar yo\'q</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            rating(t, db) {
+                const top = [...db.students].sort((a, b) => b.totalPoints - a.totalPoints);
+                t.innerHTML = `
+                    <h2>Oylik Reyting</h2>
+                    <div class="card" style="margin-top:1.5rem;">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>№</th><th>O'quvchi</th><th>Ball</th><th>Amal</th></tr></thead>
+                                <tbody>
+                                    ${top.map((s, i) => `
+                                        <tr>
+                                            <td>${i + 1}</td>
+                                            <td>${s.name} ${s.surname}</td>
+                                            <td style="font-weight:700; color:var(--primary);">${s.totalPoints}</td>
+                                            <td>${Engine.user.role === 'BOSHADMIN' ? `<button onclick="Actions.addBonus('${s.id}')" class="btn btn-ghost btn-sm">+ Bonus</button>` : ''}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    ${Engine.user.role === 'BOSHADMIN' ? `<button onclick="Actions.resetAllPoints()" class="btn btn-danger" style="margin-top:2rem;">Barcha ballarni 0 qilish</button>` : ''}
+                `;
+            },
+
+            payments(t, db) {
+                t.innerHTML = `<h2>To'lovlar</h2><div class="grid" style="margin-top:2rem;">
+                    ${db.students.map(s => `
+                        <div class="card">
+                            <strong>${s.name} ${s.surname}</strong><br><small style="color:var(--text-dim);">${db.group_members.find(x => x.studentId === s.id) ? db.groups.find(g => g.id === db.group_members.find(x => x.studentId === s.id).groupId)?.name || '—' : '—'}</small>
+                            <div style="font-size:1.6rem; margin:1rem 0; color:${s.balance < 0 ? 'var(--danger)' : 'var(--success)'}">${s.balance} so'm</div>
+                            <button onclick="Actions.addPay('${s.id}')" class="btn btn-primary" style="width:100%; justify-content:center;">To'lov qo'shish</button>
+                        </div>
+                    `).join('')}
+                </div>`;
+            },
+
+            settingsOy(t, db) {
+                t.innerHTML = `
+                    <div class="card" style="max-width:500px; margin:0 auto;">
+                        <h2>Oy Sozlamalari</h2>
+                        <div style="margin-top:1.5rem;">
+                            <label>Oyda nechta dars (Planned)</label>
+                            <input id="set-lessons" type="number" class="form-control" value="${db.settings.monthlyLessons}">
+                            <label style="margin-top:1rem; display:block;">Dars narxi (UZS)</label>
+                            <input id="set-cost" type="number" class="form-control" value="${db.settings.lessonCost}">
+                            <button onclick="Actions.saveSettings()" class="btn btn-primary" style="width:100%; margin-top:2rem; justify-content:center;">Saqlash</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            settingsPass(t, db) {
+                t.innerHTML = `<div class="card" style="max-width:400px; margin:0 auto; text-align:center;">
+                    <h2>Parolni O'zgartirish</h2>
+                    <input id="new-pw" type="password" class="form-control" placeholder="Yangi parol" style="margin-top:1.5rem;">
+                    <button onclick="Actions.updatePass()" class="btn btn-primary" style="width:100%; margin-top:2rem; justify-content:center;">Tasdiqlash</button>
+                </div>`;
+            },
+
+            frozen(t, db) {
+                const frozenList = db.students.filter(s => s.status === 'frozen');
+                t.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <h2>❄️ Muzlatilgan O'quvchilar</h2>
+                    </div>
+                    <div class="card">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>F.I.O</th><th>Guruh</th><th>Amal</th></tr></thead>
+                                <tbody>
+                                    ${frozenList.map(s => `
+                                        <tr>
+                                            <td><strong>${s.name} ${s.surname}</strong></td>
+                                            <td>${db.groups.find(g => g.id === s.groupId)?.name || '—'}</td>
+                                            <td><button onclick="Actions.unfreeze('${s.id}')" class="btn btn-ghost btn-sm" style="color:var(--success)">✅ Qayta faollashtirish</button></td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="3" style="text-align:center; padding:2rem;">Muzlatilgan o\'quvchi yo\'q</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            requests(t, db) {
+                const pending = db.requests.filter(r => r.type === 'DELETE_STUDENT' && r.status === 'pending');
+                t.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <h2>📋 O'chirish So'rovlari</h2>
+                        <span class="badge badge-warning">${pending.length} ta kutilmoqda</span>
+                    </div>
+                    <div class="card">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>O'quvchi</th><th>Guruh</th><th>So'ragan</th><th>Sana</th><th>Amal</th></tr></thead>
+                                <tbody>
+                                    ${pending.map(req => {
+                    const s = db.students.find(x => x.id === req.studentId);
+                    return `<tr>
+                                            <td><strong>${s ? s.name + ' ' + s.surname : 'Topilmadi'}</strong><br><small style="color:var(--text-dim)">ID: ${req.studentId}</small></td>
+                                            <td>${s ? (db.groups.find(g => g.id === s.groupId)?.name || '—') : '—'}</td>
+                                            <td><span class="badge badge-warning">${req.requestedBy}</span></td>
+                                            <td style="font-size:0.85rem;">${new Date(req.createdAt).toLocaleDateString('uz-UZ')}</td>
+                                            <td>
+                                                <div style="display:flex; gap:0.5rem;">
+                                                    <button onclick="Actions.approveDelete('${req.id}')" class="btn btn-primary btn-sm">✅ Ha, o'chir</button>
+                                                    <button onclick="Actions.rejectDelete('${req.id}')" class="btn btn-ghost btn-sm" style="color:var(--danger);">❌ Yo'q</button>
+                                                </div>
+                                            </td>
+                                        </tr>`;
+                }).join('') || '<tr><td colspan="5" style="text-align:center; padding:2rem;">So\'rovlar yo\'q</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            telegram(t, db) {
+                t.innerHTML = `
+                    <h2 style="margin-bottom:1.5rem;">📨 Telegram Sozlamalari</h2>
+                    <div class="grid">
+                        <div class="card">
+                            <h3 style="margin-bottom:1rem;">🔧 BOSHADMIN Chat ID</h3>
+                            <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:1rem;">Telegram botdan @userinfobot ga /start yuboring va o'zingizning chat ID raqamingizni oling:</p>
+                            <input id="tg-chatid" class="form-control" placeholder="Masalan: 123456789" value="${db.settings.boshadminTgChatId || ''}">
+                            <button onclick="Actions.saveTgChatId()" class="btn btn-primary" style="width:100%; margin-top:1rem; justify-content:center;">💾 Saqlash</button>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:1rem;">🧪 Test Xabar</h3>
+                            <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:1rem;">Bot ishlayotganini tekshirish uchun test xabar yuboring:</p>
+                            <textarea id="tg-msg" class="form-control" rows="4" placeholder="Test xabar matni...">♟️ Shaxmat CRM test xabari!</textarea>
+                            <button onclick="Actions.sendTgTest()" class="btn btn-primary" style="width:100%; margin-top:1rem; justify-content:center;">📤 Yuborish</button>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        // --- BUSINESS ACTIONS ---
+        const Actions = {
+            openStudentModal() {
+                Swal.fire({
+                    title: 'Yangi O\'quvchi',
+                    width: '600px',
+                    html: `
+                        <div style="max-height:60vh; overflow-y:auto; text-align:left; padding:0.5rem;">
+                            <label>Ism*</label>
+                            <input id="sw-name" class="form-control" placeholder="Ism">
+                            <label>Familiya*</label>
+                            <input id="sw-surname" class="form-control" placeholder="Familiya">
+                            <label>Guruh (ixtiyoriy)</label>
+                            <select id="sw-gid" class="form-control"><option value="">Guruh tanlanmagan</option>${DB.get().groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}</select>
+                            <label>Qachondan boshlagan*</label>
+                            <input id="sw-date" type="date" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                            <label>Oylik to'lov (UZS)*</label>
+                            <input id="sw-fee" type="number" class="form-control" value="50000">
+                            <label>Student KODI (ixtiyoriy, 6 xonali. Telegram uchun)</label>
+                            <input id="sw-code" class="form-control" placeholder="Avto generatsiya qilinadi">
+                            
+                            <hr style="margin:1rem 0; border:0; border-top:1px solid var(--border)">
+                            <h4 style="color:var(--text-dim)">Ixtiyoriy maydonlar</h4>
+                            <input id="sw-phone" class="form-control" placeholder="O'quvchi telefoni">
+                            <input id="sw-addr" class="form-control" placeholder="Manzili">
+                            <input id="sw-fname" class="form-control" placeholder="Otasining ism-sharifi">
+                            <input id="sw-fphone" class="form-control" placeholder="Otasining tel raqami">
+                            <input id="sw-mname" class="form-control" placeholder="Onasining ism-sharifi">
+                            <input id="sw-mphone" class="form-control" placeholder="Onasining tel raqami">
+                            <textarea id="sw-note" class="form-control" placeholder="Qo'shimcha izoh..."></textarea>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Saqlash',
+                    cancelButtonText: 'Bekor',
+                    preConfirm: () => {
+                        const code = document.getElementById('sw-code').value.trim() || Math.floor(100000 + Math.random() * 900000).toString();
+                        if (!document.getElementById('sw-name').value || !document.getElementById('sw-surname').value) return Swal.showValidationMessage('Ism va Familiya majburiy!');
+                        return {
+                            id: crypto.randomUUID(),
+                            studentCode: code,
+                            name: document.getElementById('sw-name').value,
+                            surname: document.getElementById('sw-surname').value,
+                            startDate: document.getElementById('sw-date').value,
+                            monthlyFee: Number(document.getElementById('sw-fee').value),
+                            studentPhone: document.getElementById('sw-phone').value,
+                            address: document.getElementById('sw-addr').value,
+                            fatherName: document.getElementById('sw-fname').value,
+                            fatherPhone: document.getElementById('sw-fphone').value,
+                            motherName: document.getElementById('sw-mname').value,
+                            motherPhone: document.getElementById('sw-mphone').value,
+                            note: document.getElementById('sw-note').value,
+                            groupId: document.getElementById('sw-gid').value
+                        }
+                    }
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        const db = DB.get();
+                        if (db.students.find(x => x.studentCode === r.value.studentCode)) return Swal.fire('Xato', 'Bu KOD band', 'error');
+                        db.students.push({ ...r.value, balance: 0, totalPoints: 0, faceData: null, tgChatIds: [], status: 'active' });
+                        if (r.value.groupId) {
+                            db.group_members.push({ id: crypto.randomUUID(), studentId: r.value.id, groupId: r.value.groupId });
+                        }
+                        DB.save(db);
+                        Engine.navigate('students');
+                    }
+                });
+            },
+
+            editStudent(id) {
+                const db = DB.get();
+                const s = db.students.find(x => x.id === id);
+                if (!s) return;
+
+                // joriy guruhni topish
+                const cg = db.group_members.find(x => x.studentId === s.id)?.groupId || '';
+
+                Swal.fire({
+                    title: 'Tahrirlash',
+                    width: '600px',
+                    html: `
+                        <div style="max-height:60vh; overflow-y:auto; text-align:left; padding:0.5rem;">
+                            <label>Ism*</label>
+                            <input id="ed-name" class="form-control" value="${s.name}">
+                            <label>Familiya*</label>
+                            <input id="ed-surname" class="form-control" value="${s.surname}">
+                            <label>Guruh</label>
+                            <select id="ed-gid" class="form-control"><option value="">Guruh tanlanmagan</option>${db.groups.map(g => `<option value="${g.id}" ${g.id === cg ? 'selected' : ''}>${g.name}</option>`).join('')}</select>
+                            <label>Qachondan boshlagan</label>
+                            <input id="ed-date" type="date" class="form-control" value="${s.startDate || ''}">
+                            <label>Oylik to'lov (UZS)</label>
+                            <input id="ed-fee" type="number" class="form-control" value="${s.monthlyFee || 50000}">
+                            <label>Student KODI (Telegram)</label>
+                            <input id="ed-code" class="form-control" value="${s.studentCode || ''}" placeholder="Masalan: 123456">
+                            
+                            <hr style="margin:1rem 0; border:0; border-top:1px solid var(--border)">
+                            <h4 style="color:var(--text-dim)">Ixtiyoriy maydonlar</h4>
+                            <input id="ed-phone" class="form-control" value="${s.studentPhone || ''}" placeholder="O'quvchi telefoni">
+                            <input id="ed-addr" class="form-control" value="${s.address || ''}" placeholder="Manzili">
+                            <input id="ed-fname" class="form-control" value="${s.fatherName || ''}" placeholder="Otasining ism-sharifi">
+                            <input id="ed-fphone" class="form-control" value="${s.fatherPhone || ''}" placeholder="Otasining tel raqami">
+                            <input id="ed-mname" class="form-control" value="${s.motherName || ''}" placeholder="Onasining ism-sharifi">
+                            <input id="ed-mphone" class="form-control" value="${s.motherPhone || ''}" placeholder="Onasining tel raqami">
+                            <textarea id="ed-note" class="form-control" placeholder="Izoh...">${s.note || ''}</textarea>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Saqlash',
+                    cancelButtonText: 'Bekor',
+                    preConfirm: () => {
+                        if (!document.getElementById('ed-name').value || !document.getElementById('ed-surname').value) return Swal.showValidationMessage('Ism va Familiya majburiy!');
+                        return {
+                            studentCode: document.getElementById('ed-code').value.trim() || s.studentCode,
+                            name: document.getElementById('ed-name').value,
+                            surname: document.getElementById('ed-surname').value,
+                            startDate: document.getElementById('ed-date').value,
+                            monthlyFee: Number(document.getElementById('ed-fee').value),
+                            studentPhone: document.getElementById('ed-phone').value,
+                            address: document.getElementById('ed-addr').value,
+                            fatherName: document.getElementById('ed-fname').value,
+                            fatherPhone: document.getElementById('ed-fphone').value,
+                            motherName: document.getElementById('ed-mname').value,
+                            motherPhone: document.getElementById('ed-mphone').value,
+                            note: document.getElementById('ed-note').value,
+                            groupId: document.getElementById('ed-gid').value
+                        }
+                    }
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        const db2 = DB.get();
+                        const s2 = db2.students.find(x => x.id === id);
+
+                        // Check code dupe
+                        if (r.value.studentCode !== s2.studentCode && db2.students.find(x => x.studentCode === r.value.studentCode)) {
+                            return Swal.fire('Xato', 'Bu KOD boshqa o\'quvchida bor', 'error');
+                        }
+
+                        // update group
+                        db2.group_members = db2.group_members.filter(x => x.studentId !== id);
+                        if (r.value.groupId) {
+                            db2.group_members.push({ id: crypto.randomUUID(), studentId: id, groupId: r.value.groupId });
+                        }
+
+                        Object.assign(s2, r.value);
+                        DB.save(db2);
+                        Engine.navigate('students');
+                    }
+                });
+            },
+
+            deleteStudent(id) {
+                const db = DB.get();
+                const s = db.students.find(x => x.id === id);
+                if (!s) return;
+
+                if (Engine.user.role === 'BOSHADMIN') {
+                    // BOSHADMIN to'g'ridan-to'g'ri o'chiradi
+                    Swal.fire({
+                        title: '🗑️ O\'chirilsinmi?',
+                        html: `<b>${s.name} ${s.surname}</b> o'quvchini o'chirmoqchisiz.<br><span style="color:var(--danger)">Bu amalni qaytarib bo'lmaydi!</span>`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '✅ Ha, o\'chir',
+                        cancelButtonText: '❌ Yo\'q'
+                    }).then(r => {
+                        if (r.isConfirmed) {
+                            const db2 = DB.get();
+                            db2.students = db2.students.filter(x => x.id !== id);
+                            db2.requests = db2.requests.filter(x => x.studentId !== id);
+                            db2.attendance = db2.attendance.filter(x => x.studentId !== id);
+                            DB.save(db2);
+                            Swal.fire('✅ O\'chirildi', `${s.name} ${s.surname} o'chirildi.`, 'success').then(() => Engine.navigate('students'));
+                        }
+                    });
+                } else {
+                    // ADMIN — so'rovnoma yuboradi
+                    Swal.fire({
+                        title: '📩 So\'rovnoma yuborish',
+                        html: `<b>${s.name} ${s.surname}</b> ni o'chirish uchun BOSHADMIN ga so'rov yuborilasiami?`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '📨 Ha, yuborish',
+                        cancelButtonText: 'Bekor'
+                    }).then(async r => {
+                        if (!r.isConfirmed) return;
+                        const db2 = DB.get();
+                        const reqId = crypto.randomUUID();
+                        db2.requests.push({
+                            id: reqId,
+                            type: 'DELETE_STUDENT',
+                            studentId: id,
+                            requestedBy: Engine.user.user,
+                            status: 'pending',
+                            createdAt: Date.now()
+                        });
+                        DB.save(db2);
+
+                        // Telegram orqali BOSHADMIN ga xabar
+                        const chatId = db2.settings.boshadminTgChatId;
+                        if (chatId) {
+                            const grpName = db2.groups.find(g => g.id === s.groupId)?.name || '—';
+                            const msg = `🚨 <b>O'CHIRISH SO'ROVI</b>\n\n👤 O'quvchi: <b>${s.name} ${s.surname}</b>\n🏫 Guruh: ${grpName}\n📋 ID: ${s.id}\n👮 So'ragan: ${Engine.user.user}\n\n⚠️ CRM dagi <b>So'rovlar</b> bo'limiga kiring va tasdiqlang yoki rad eting.`;
+                            try {
+                                const res = await fetch(`${TG_URL}/sendMessage`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' })
+                                });
+                                const json = await res.json();
+                                if (json.ok) {
+                                    Swal.fire('✅ Yuborildi!', 'So\'rov BOSHADMIN ga Telegram orqali yuborildi. So\'rovlar bo\'limida ko\'rinadi.', 'success');
+                                } else {
+                                    Swal.fire('⚠️ Partly OK', `So'rov saqlandi lekin Telegram xato: ${json.description}. CRM So'rovlar bo'limida ko'rinadi.`, 'warning');
+                                }
+                            } catch (e) {
+                                Swal.fire('⚠️ Saqlandi', 'So\'rov saqlandi lekin Telegram yuborilmadi (internet). CRM So\'rovlar bo\'limida ko\'rinadi.', 'warning');
+                            }
+                        } else {
+                            Swal.fire('✅ Saqlandi', 'So\'rov saqlandi. BOSHADMIN CRM dagi So\'rovlar bo\'limida ko\'radi.', 'success');
+                        }
+                    });
+                }
+            },
+
+            viewProfile(id) {
+                const s = DB.get().students.find(x => x.id === id);
+                if (!s) return;
+                const db = DB.get();
+                const gName = db.groups.find(g => g.id === db.group_members.find(x => x.studentId === s.id)?.groupId)?.name || 'Yo\'q';
+
+                Swal.fire({
+                    title: s.name + ' ' + s.surname,
+                    width: '600px',
+                    html: `
+                        <div style="text-align:center;">
+                            <img src="${s.faceImg || 'https://via.placeholder.com/150'}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--primary);">
+                            <div style="margin-top:1rem; font-size:1.1rem">
+                                <strong>KOD:</strong> <span style="color:var(--success)">${s.studentCode || 'Yo\'q'}</span> | 
+                                <strong>Guruh:</strong> ${gName}
+                            </div>
+                            <div style="margin-top:0.5rem">
+                                <strong>Balans:</strong> <span style="color:${s.balance < 0 ? 'var(--danger)' : 'var(--success)'}">${s.balance} so'm</span> | 
+                                <strong>Coin:</strong> <span style="color:var(--primary)">${s.totalPoints}</span>
+                            </div>
+                            <hr style="border:0; border-top:1px solid var(--border); margin:1.5rem 0;">
+                            <div style="text-align:left; font-size:0.95rem; color:var(--text-dim)">
+                                <p><strong>Tel:</strong> ${s.studentPhone || 'kiritilmagan'}</p>
+                                <p><strong>Ota:</strong> ${s.fatherName || ''} ${s.fatherPhone || ''}</p>
+                                <p><strong>Ona:</strong> ${s.motherName || ''} ${s.motherPhone || ''}</p>
+                                <p><strong>Telegram:</strong> ${s.tgChatIds && s.tgChatIds.length > 0 ? 'Bog\'langan' : 'Bog\'lanmagan'}</p>
+                            </div>
+                            <button onclick="FaceID.enroll('${s.id}')" class="btn btn-ghost" style="margin-top:1.5rem;"><i data-lucide="scan"></i> FaceID Ro'yxatdan o'tkazish</button>
+                        </div>
+                    `,
+                    showConfirmButton: false,
+                    didOpen: () => lucide.createIcons()
+                });
+            },
+
+            openGroupModal() {
+                Swal.fire({
+                    title: 'Yangi Guruh',
+                    html: `
+                        <input id="g-name" class="form-control" placeholder="Nomi">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
+                           <div><label>Boshlanish</label><input id="g-start" type="time" class="form-control" value="16:00"></div>
+                           <div><label>Tugash</label><input id="g-end" type="time" class="form-control" value="18:00"></div>
+                        </div>
+                        <div style="margin-top:1rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; text-align:left;">
+                            <label><input type="checkbox" name="days" value="Dush"> Dush</label>
+                            <label><input type="checkbox" name="days" value="Sesh"> Sesh</label>
+                            <label><input type="checkbox" name="days" value="Chor"> Chor</label>
+                            <label><input type="checkbox" name="days" value="Pay"> Pay</label>
+                            <label><input type="checkbox" name="days" value="Jum"> Jum</label>
+                            <label><input type="checkbox" name="days" value="Sha"> Sha</label>
+                        </div>
+                    `,
+                    preConfirm: () => ({
+                        id: crypto.randomUUID(),
+                        name: document.getElementById('g-name').value,
+                        start: document.getElementById('g-start').value,
+                        endTime: document.getElementById('g-end').value,
+                        days: Array.from(document.querySelectorAll('input[name="days"]:checked')).map(x => x.value)
+                    })
+                }).then(r => {
+                    if (r.value) {
+                        const db = DB.get();
+                        db.groups.push(r.value);
+                        DB.save(db);
+                        Engine.navigate('groups');
+                    }
+                });
+            },
+
+            manualAttendance() {
+                const gid = document.getElementById('att-gid').value;
+                const date = document.getElementById('att-date').value;
+                if (!gid || !date) return Swal.fire('Xato', 'Guruh va sanani tanlang', 'error');
+
+                const db = DB.get();
+                const g = db.groups.find(x => x.id === gid);
+                let session = db.sessions.find(x => x.groupId === gid && x.date === date);
+                if (!session) {
+                    session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start || '09:00', endTime: g.endTime || '23:59', isClosed: false };
+                    db.sessions.push(session);
+                    DB.save(db);
+                }
+
+                if (session.isClosed && Engine.user.role !== 'BOSHADMIN') {
+                    return Swal.fire('Taqiq', 'Bu dars yakunlangan!', 'warning');
+                }
+
+                const gMembers = db.group_members.filter(x => x.groupId === gid).map(x => x.studentId);
+                const mems = db.students.filter(x => gMembers.includes(x.id) && x.status === 'active');
+
+                // Render list
+                document.getElementById('att-setup').innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <h2>${g.name} (${date})</h2>
+                        <div style="display:flex; gap:1rem;">
+                            <button onclick="Engine.navigate('attendance')" class="btn btn-ghost">Orqaga</button>
+                            ${!session.isClosed ? `<button onclick="Actions.endLesson('${session.id}')" class="btn btn-primary">Darsni Tugatish</button>` : `<span class="badge badge-danger">YOPILGAN</span>`}
+                        </div>
+                    </div>
+                    <div class="table-container" style="text-align:left;">
+                        <table>
+                            <thead><tr><th>O'quvchi</th><th>Holat</th></tr></thead>
+                            <tbody>
+                                ${mems.map(s => {
+                    const att = db.attendance.find(a => a.sessionId === session.id && a.studentId === s.id);
+                    let btnHtml = '';
+                    if (att) {
+                        btnHtml = `<span class="badge ${att.status === 'KELDI' ? 'badge-success' : att.status === 'KECHIKDI' ? 'badge-warning' : 'badge-danger'}">${att.status}</span>
+                                        ${!session.isClosed ? `<button onclick="Actions.editMark('${session.id}', '${s.id}')" class="btn btn-ghost btn-sm" style="margin-left:0.5rem">✏️ O'zgartirish</button>` : ''}`;
+                    } else {
+                        btnHtml = `
+                                            <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELDI')" class="btn btn-ghost btn-sm">КELDI</button>
+                                            <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KECHIKDI')" class="btn btn-ghost btn-sm">S</button>
+                                            <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELMADI')" class="btn btn-danger btn-sm">X</button>
+                                        `;
+                    }
+                    return `<tr><td>${s.name} ${s.surname}</td><td id="mcell-${s.id}">${btnHtml}</td></tr>`;
+                }).join('') || '<tr><td colspan="2" style="text-align:center; padding:2rem">Bu guruhda o\'quvchi yo\'q</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            applyMark(sessionId, studentId, status) {
+                if (status === 'KELMADI') {
+                    Swal.fire({
+                        title: 'Kelmadi', html: `<input id="sabab-input" class="form-control" placeholder="Sabab...">`,
+                        showCancelButton: true, confirmButtonText: 'Sababli', cancelButtonText: 'Sababsiz'
+                    }).then(r => {
+                        Actions.saveMark(sessionId, studentId, status, r.isConfirmed, document.getElementById('sabab-input')?.value || '');
+                    });
+                } else {
+                    Actions.saveMark(sessionId, studentId, status, false, '');
+                }
+            },
+
+            editMark(sessionId, sid) {
+                Swal.fire({ title: 'Davomatni tahrirlash', text: 'Davomat qayta kiritiladimi?', showCancelButton: true }).then(r => {
+                    if (r.isConfirmed) {
+                        const db = DB.get();
+                        const att = db.attendance.find(a => a.sessionId === sessionId && a.studentId === sid);
+                        if (att) {
+                            db.attendance = db.attendance.filter(a => a.id !== att.id);
+                            db.coin_ledger = db.coin_ledger.filter(c => c.attendanceId !== att.id);
+                            Actions.recalcPoints(sid, db);
+                            DB.save(db);
+                            Actions.manualAttendance();
+                        }
+                    }
+                });
+            },
+
+            saveMark(sessionId, studentId, status, isJustified, note) {
+                const db = DB.get();
+                const session = db.sessions.find(x => x.id === sessionId);
+                if (session.isClosed && Engine.user.role !== 'BOSHADMIN') return Swal.fire('Xato', 'Sessiya yopilgan', 'error');
+
+                // Idempotent: remove existing if any
+                const existing = db.attendance.find(a => a.sessionId === sessionId && a.studentId === studentId);
+                if (existing) {
+                    db.attendance = db.attendance.filter(a => a.id !== existing.id);
+                    db.coin_ledger = db.coin_ledger.filter(c => c.attendanceId !== existing.id);
+                }
+
+                const coins = status === 'KELDI' ? 5 : status === 'KECHIKDI' ? 3 : 0;
+                const recId = crypto.randomUUID();
+
+                db.attendance.push({
+                    id: recId, sessionId, studentId, timestamp: Date.now(), status, isJustified, note, coinsApplied: false
+                });
+
+                if (coins > 0) {
+                    db.coin_ledger.push({ id: crypto.randomUUID(), attendanceId: recId, studentId, amount: coins, date: Date.now() });
+                }
+
+                Actions.recalcPoints(studentId, db);
+                DB.save(db);
+                Actions.manualAttendance(); // re-render
+                TGBot.notifyAttendance(studentId, status, db, note ? `Sabab: ${note}` : '');
+            },
+
+            recalcPoints(sid, db) {
+                const s = db.students.find(x => x.id === sid);
+                if (s) s.totalPoints = db.coin_ledger.filter(c => c.studentId === sid).reduce((sum, c) => sum + c.amount, 0);
+            },
+
+            endLesson(sessionId) {
+                const db = DB.get();
+                const session = db.sessions.find(x => x.id === sessionId);
+                const gMembers = db.group_members.filter(x => x.groupId === session.groupId).map(x => x.studentId);
+                const mems = db.students.filter(x => gMembers.includes(x.id) && x.status === 'active');
+
+                const unmarked = mems.filter(s => !db.attendance.find(a => a.sessionId === sessionId && a.studentId === s.id));
+                if (unmarked.length > 0) {
+                    return Swal.fire('Xato', `Barcha o'quvchilar belgilanmagan! Belgilanmaganlar: ${unmarked.map(s => s.name).join(', ')}`, 'error');
+                }
+
+                session.isClosed = true;
+
+                const kelmadiJust = db.attendance.filter(a => a.sessionId === sessionId && a.status === 'KELMADI' && a.isJustified);
+                kelmadiJust.forEach(a => {
+                    db.absences.push({ id: crypto.randomUUID(), studentId: a.studentId, date: session.date, status: 'OPEN' });
+                });
+
+                // Subtract balance from all present/late/noshow students ? Requirements only care about Coins right now. 
+                // But previously it subtracted db.settings.lessonCost. Let's do it for all members.
+                mems.forEach(s => {
+                    s.balance -= db.settings.lessonCost;
+                });
+
+                DB.save(db);
+                confetti();
+                Swal.fire('✅ Yakunlandi', 'Dars yopilgan deb belgilandi. Endi o\'zgartirib bo\'lmaydi.', 'success').then(() => Engine.navigate('attendance'));
+            },
+
+            addPay(sid) {
+                Swal.fire({ title: 'To\'lov summasi', input: 'number', inputValue: 500000, showCancelButton: true }).then(r => {
+                    if (r.value) {
+                        const db = DB.get();
+                        const s = db.students.find(x => x.id === sid);
+                        s.balance += parseInt(r.value);
+                        db.transactions.push({ id: crypto.randomUUID(), studentId: sid, amount: parseInt(r.value), date: Date.now() });
+                        DB.save(db);
+                        Engine.navigate('payments');
+                    }
+                });
+            },
+
+            // ---- BOSHADMIN: So'rovlarni tasdiqlash ----
+            approveDelete(reqId) {
+                Swal.fire({
+                    title: '✅ Tasdiqlash',
+                    text: 'O\'quvchi o\'chirilsinmi?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ha, o\'chir',
+                    cancelButtonText: 'Yo\'q'
+                }).then(r => {
+                    if (!r.isConfirmed) return;
+                    const db = DB.get();
+                    const req = db.requests.find(x => x.id === reqId);
+                    if (!req) return;
+                    db.students = db.students.filter(x => x.id !== req.studentId);
+                    db.attendance = db.attendance.filter(x => x.studentId !== req.studentId);
+                    req.status = 'approved';
+                    DB.save(db);
+                    Swal.fire('✅ O\'chirildi', 'O\'quvchi muvaffaqiyatli o\'chirildi.', 'success').then(() => Engine.navigate('requests'));
+                });
+            },
+
+            rejectDelete(reqId) {
+                const db = DB.get();
+                const req = db.requests.find(x => x.id === reqId);
+                if (req) { req.status = 'rejected'; DB.save(db); }
+                Swal.fire('❌ Rad etildi', 'O\'chirish so\'rovi rad etildi.', 'info').then(() => Engine.navigate('requests'));
+            },
+
+            saveSettings() {
+                const db = DB.get();
+                db.settings.monthlyLessons = parseInt(document.getElementById('set-lessons').value) || 12;
+                db.settings.lessonCost = parseInt(document.getElementById('set-cost').value) || 50000;
+                DB.save(db);
+                Swal.fire('✅ Saqlandi', 'Sozlamalar saqlandi.', 'success');
+            },
+
+            updatePass() {
+                const pw = document.getElementById('new-pw').value;
+                if (!pw || pw.length < 3) return Swal.fire('Xato', 'Parol kamida 3 ta belgi bo\'lishi kerak', 'error');
+                const db = DB.get();
+                const me = db.admins.find(a => a.id === Engine.user.id);
+                if (me) { me.pass = pw; DB.save(db); Engine.user.pass = pw; }
+                Swal.fire('✅ Yangilandi', 'Parolingiz o\'zgartirildi.', 'success');
+            },
+
+            manageGroup(gid) {
+                const db = DB.get();
+                const g = db.groups.find(x => x.id === gid);
+                Swal.fire({
+                    title: g.name,
+                    html: `
+                        <input id="mg-name" class="form-control" value="${g.name}" placeholder="Nomi">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
+                           <div><label>Boshlanish</label><input id="mg-start" type="time" class="form-control" value="${g.start || ''}"></div>
+                           <div><label>Tugash</label><input id="mg-end" type="time" class="form-control" value="${g.endTime || ''}"></div>
+                        </div>
+                        <div style="margin-top:1rem; display:flex; gap:1rem; justify-content:center;">
+                            <button onclick="Actions.freezeGroup('${gid}')" class="btn btn-ghost btn-sm">❄️ Guruhni muzlatish</button>
+                            <button onclick="Actions.deleteGroup('${gid}')" class="btn btn-danger btn-sm">🗑️ O'chirish</button>
+                        </div>`,
+                    showCancelButton: true,
+                    confirmButtonText: '💾 Saqlash',
+                    cancelButtonText: 'Bekor',
+                    preConfirm: () => ({
+                        name: document.getElementById('mg-name').value,
+                        start: document.getElementById('mg-start').value,
+                        endTime: document.getElementById('mg-end').value
+                    })
+                }).then(r => {
+                    if (r.value) {
+                        const db2 = DB.get();
+                        const g2 = db2.groups.find(x => x.id === gid);
+                        Object.assign(g2, r.value);
+                        DB.save(db2);
+                        Engine.navigate('groups');
+                    }
+                });
+            },
+
+            deleteGroup(gid) {
+                Swal.close();
+                Swal.fire({ title: 'Guruh o\'chirilsinmi?', icon: 'warning', showCancelButton: true }).then(r => {
+                    if (r.isConfirmed) {
+                        const db = DB.get();
+                        db.groups = db.groups.filter(x => x.id !== gid);
+                        DB.save(db);
+                        Engine.navigate('groups');
+                    }
+                });
+            },
+
+            freezeGroup(gid) {
+                Swal.close();
+                const db = DB.get();
+                db.students.filter(s => s.groupId === gid).forEach(s => s.status = 'frozen');
+                DB.save(db);
+                Swal.fire('❄️ Muzlatildi', 'Guruh o\'quvchilari muzlatildi.', 'success').then(() => Engine.navigate('groups'));
+            },
+
+            unfreeze(sid) {
+                const db = DB.get();
+                const s = db.students.find(x => x.id === sid);
+                if (s) { s.status = 'active'; DB.save(db); }
+                Engine.navigate('frozen');
+            },
+
+            addBonus(sid) {
+                Swal.fire({ title: '+ Bonus ball', input: 'number', inputValue: 10, inputAttributes: { min: 1, max: 100 }, showCancelButton: true }).then(r => {
+                    if (r.value) {
+                        const db = DB.get();
+                        const s = db.students.find(x => x.id === sid);
+                        s.totalPoints += parseInt(r.value);
+                        DB.save(db);
+                        Engine.navigate('rating');
+                    }
+                });
+            },
+
+            resetAllPoints() {
+                Swal.fire({ title: 'Barcha ballarni 0 qilish?', icon: 'warning', showCancelButton: true }).then(r => {
+                    if (r.isConfirmed) {
+                        const db = DB.get();
+                        db.students.forEach(s => { s.totalPoints = 0; s.monthlyPoints = 0; });
+                        DB.save(db);
+                        Engine.navigate('rating');
+                    }
+                });
+            },
+
+            resolveAbsent(aid) {
+                const db = DB.get();
+                const a = db.absences.find(x => x.id === aid);
+                if (a) { a.status = 'CLOSED'; DB.save(db); }
+                Engine.navigate('absent');
+            },
+
+            saveTgChatId() {
+                const chatId = document.getElementById('tg-chatid').value.trim();
+                const db = DB.get();
+                db.settings.boshadminTgChatId = chatId;
+                DB.save(db);
+                Swal.fire('✅ Saqlandi', 'BOSHADMIN Telegram Chat ID saqlandi!', 'success');
+            },
+
+            async sendTgTest() {
+                const db = DB.get();
+                const chatId = db.settings.boshadminTgChatId;
+                if (!chatId) return Swal.fire('Xato', 'Avval Chat ID ni saqlang!', 'error');
+                const msg = document.getElementById('tg-msg')?.value || '♟️ Test xabar';
+                try {
+                    Swal.fire({ title: 'Yuborilmoqda...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    const res = await fetch(`${TG_URL}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' })
+                    });
+                    const json = await res.json();
+                    if (json.ok) {
+                        Swal.fire('✅ Yuborildi!', 'Telegram xabari muvaffaqiyatli yuborildi!', 'success');
+                    } else {
+                        Swal.fire('❌ Xato', `Telegram xato: ${json.description}\n\nChat ID to'g'riligini tekshiring.`, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('❌ Ulanish xatosi', 'Internet aloqasini tekshiring.', 'error');
+                }
+            }
+        };
+
+        // --- FACE ID CORE ENGINE (REBUILT FOR RELIABILITY) ---
+        const FaceID = {
+            stream: null,
+            active: false,
+            mode: 'user', // default: front camera
+            candidates: [],
+            currentSessionId: null,
+            lastCapturedBase64: null,
+
+            updateDiag(key, val, isBool = false) {
+                const el = document.getElementById(`diag-${key}`);
+                if (!el) return;
+                el.innerText = val === null || val === undefined ? '-' : val;
+                if (isBool) {
+                    el.classList.toggle('true', val === true || val === 'true');
+                    el.classList.toggle('false', val === false || val === 'false');
+                }
+            },
+
+            async start() {
+                const gid = document.getElementById('att-gid')?.value;
+                const date = document.getElementById('att-date')?.value;
+                if (!gid || !date) return Swal.fire('Xato', 'Guruh va sanani tanlang', 'error');
+
+                const db = DB.get();
+                const g = db.groups.find(x => x.id === gid);
+                let session = db.sessions.find(x => x.groupId === gid && x.date === date);
+                if (!session) {
+                    session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start || '09:00', endTime: g.endTime || '23:59', isClosed: false };
+                    db.sessions.push(session);
+                    DB.save(db);
+                }
+                if (session.isClosed && Engine.user.role !== 'BOSHADMIN') return Swal.fire('Taqiq', 'Bu dars yakunlangan!', 'warning');
+                
+                this.currentSessionId = session.id;
+
+                // 1) Diagnosis Basics
+                this.updateDiag('https', location.protocol === 'https:', true);
+                this.updateDiag('iframe', window.self !== window.top, true);
+                if (window.self !== window.top) document.getElementById('iframe-warn').style.display = 'block';
+
+                // 2) Candidates Logic
+                const members = db.group_members.filter(m => m.groupId === gid);
+                const students = db.students.filter(s => members.some(m => m.studentId === s.id) && s.status === 'active');
+                
+                // User requirement: facePhoto != null and facePhoto != ""
+                // In our schema faceImg is the base64 photo
+                this.candidates = students.filter(s => s.faceImg && s.faceImg.length > 100);
+                this.updateDiag('candidates', this.candidates.length);
+                document.getElementById('chk-candidates').checked = this.candidates.length > 0;
+
+                const noFaceList = document.getElementById('no-face-list');
+                if (this.candidates.length === 0) {
+                    noFaceList.style.display = 'block';
+                    const noFaceStudents = students.filter(s => !s.faceImg || s.faceImg.length < 100);
+                    document.getElementById('no-face-names').innerHTML = noFaceStudents.length > 0 ? 
+                        noFaceStudents.map(s => `• ${s.name} ${s.surname} (${s.studentCode || 'no code'}) <button onclick="FaceID.stop(); Actions.viewProfile('${s.id}')" class="btn btn-ghost btn-sm" style="padding:2px 5px; font-size:10px;">FaceID o‘tkazish</button>`).join('<br>') : 
+                        'Guruhda o‘zi o‘quvchi yo‘q';
+                } else {
+                    noFaceList.style.display = 'none';
+                }
+
+                // Show Scan View
+                document.getElementById('att-setup').style.display = 'none';
+                document.getElementById('att-scan').style.display = 'block';
+                document.getElementById('manual-fallback').style.display = 'none';
+                this.updateDiag('cam', this.mode);
+
+                // 3) Camera Start with Fallbacks
+                const vid = document.getElementById('att-video');
+                const statusEl = document.getElementById('att-status');
+                statusEl.innerHTML = '<span style="color:var(--primary)">Kamera ishga tushmoqda...</span>';
+
+                const constraints = [
+                    { video: { facingMode: this.mode, width: { ideal: 1280 }, height: { ideal: 720 } } },
+                    { video: { facingMode: this.mode } },
+                    { video: true }
+                ];
+
+                let success = false;
+                for (let c of constraints) {
+                    try {
+                        console.log("Trying constraint:", c);
+                        this.stream = await navigator.mediaDevices.getUserMedia(c);
+                        vid.srcObject = this.stream;
+                        await vid.play();
+                        
+                        // Wait for videoWidth > 0
+                        const vw = await new Promise((resolve) => {
+                            let attempts = 0;
+                            const check = setInterval(() => {
+                                attempts++;
+                                if (vid.videoWidth > 0) { clearInterval(check); resolve(vid.videoWidth); }
+                                if (attempts > 25) { clearInterval(check); resolve(0); } // 2500ms fallback
+                            }, 100);
+                        });
+
+                        if (vw > 0) {
+                            success = true;
+                            this.updateDiag('res', `${vid.videoWidth}x${vid.videoHeight}`);
+                            this.updateDiag('tracks', `${this.stream.getTracks().length} (${this.stream.getTracks()[0].readyState})`);
+                            document.getElementById('chk-video').checked = true;
+                            break;
+                        } else {
+                            // Stop track and try next fallback
+                            this.stream.getTracks().forEach(t => t.stop());
+                        }
+                    } catch (e) {
+                        console.warn("Constraint failed:", e);
+                        this.updateDiag('error', e.name + ': ' + e.message);
+                    }
+                }
+
+                if (!success) {
+                    statusEl.innerHTML = '<span style="color:var(--danger)">Kamera yoqilmadi!</span>';
+                    return;
+                }
+
+                statusEl.innerHTML = '<span style="color:var(--success)">Kamera tayyor.</span>';
+                this.active = true;
+
+                // Update Camera Permission State
+                try {
+                    const perm = await navigator.permissions.query({ name: 'camera' });
+                    this.updateDiag('perm', perm.state);
+                    perm.onchange = () => this.updateDiag('perm', perm.state);
+                } catch(e) { this.updateDiag('perm', 'unknown'); }
+
+                // Load AI if needed
+                if (!Engine.faceModelsLoaded) {
+                    statusEl.innerHTML = '<span style="color:var(--warning)">AI yuklanmoqda...</span>';
+                    await Engine.loadFaceModels();
+                    statusEl.innerHTML = '<span style="color:var(--success)">Kamera tayyor. AI Faol.</span>';
+                }
+            },
+
+            async identify() {
+                if (!this.active || !this.stream) return;
+                
+                const btn = document.getElementById('btn-identify');
+                const statusEl = document.getElementById('att-status');
+                const nameEl = document.getElementById('att-name');
+                const vid = document.getElementById('att-video');
+
+                btn.disabled = true;
+                statusEl.innerHTML = '<span style="color:var(--primary)">O‘quvchi aniqlanmoqda...</span>';
+                nameEl.innerText = '';
+                this.updateDiag('last-req', new Date().toLocaleTimeString());
+                document.getElementById('manual-fallback').style.display = 'none';
+
+                try {
+                    // Capture Frame
+                    const canvas = document.createElement('canvas');
+                    canvas.width = vid.videoWidth;
+                    canvas.height = vid.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    // Mirror flip if using front camera
+                    if (this.mode === 'user') {
+                        ctx.translate(canvas.width, 0);
+                        ctx.scale(-1, 1);
+                    }
+                    ctx.drawImage(vid, 0, 0);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.85);
+                    this.lastCapturedBase64 = base64;
+
+                    // 4) FACE DETECTION GATE
+                    const detection = await faceapi.detectSingleFace(vid, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }));
+                    if (!detection) {
+                        statusEl.innerHTML = '<span style="color:var(--danger)">YUZ TOPILMADI. Iltimos kameraga to‘g‘ri qarang.</span>';
+                        document.getElementById('chk-no-face').checked = true;
+                        btn.disabled = false;
+                        return;
+                    }
+                    document.getElementById('chk-no-face').checked = false; // Reset if found
+                    document.getElementById('chk-identify').checked = true;
+
+                    // 5) IDENTIFY REQUEST PAYLOAD
+                    const payload = {
+                        targetImageBase64: base64,
+                        candidates: this.candidates.map(s => ({
+                            studentId: s.id,
+                            facePhotoBase64: s.faceImg
+                        }))
+                    };
+
+                    this.updateDiag('last-res', 'Sending identify request...');
+
+                    // We use the LOCAL face-api logic as the "backend" but structured for the requirement
+                    // If a real webhook exists, we'd fetch(URL, {body: JSON.stringify(payload)})
+                    const result = await this.mockIdentifyRequest(payload);
+                    this.updateDiag('last-res', JSON.stringify(result, null, 2));
+
+                    if (result.match && result.studentId) {
+                        const student = this.candidates.find(s => s.id === result.studentId);
+                        if (student) {
+                            this.processMatch(student);
+                        } else {
+                            this.processUnknown();
+                        }
+                    } else {
+                        this.processUnknown();
+                    }
+                } catch (e) {
+                    console.error(e);
+                    this.updateDiag('error', e.name + ': ' + e.message);
+                    this.updateDiag('last-res', 'ERROR: ' + e.message);
+                    this.showManualFallback();
+                }
+
+                btn.disabled = false;
+            },
+
+            // Mocking the behavior of a remote Identify API using local face-api
+            async mockIdentifyRequest(payload) {
+                // Simulate network latency
+                await new Promise(r => setTimeout(r, 600));
+
+                const vid = document.getElementById('att-video');
+                const fullDet = await faceapi.detectSingleFace(vid).withFaceLandmarks().withFaceDescriptor();
+                
+                if (!fullDet) return { match: false, status: 'UNKNOWN', error: 'Face lost during processing' };
+
+                let bestMatch = null;
+                let minDistance = 0.6; // Threshold
+
+                for (let s of this.candidates) {
+                    if (!s.faceData) continue;
+                    const distance = faceapi.euclideanDistance(fullDet.descriptor, new Float32Array(s.faceData));
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        bestMatch = s;
+                    }
+                }
+
+                if (bestMatch && minDistance < 0.55) {
+                    return { match: true, studentId: bestMatch.id, confidence: (1 - minDistance).toFixed(2) };
+                } else {
+                    return { match: false, status: 'UNKNOWN' };
+                }
+            },
+
+            processMatch(student) {
+                const statusEl = document.getElementById('att-status');
+                const nameEl = document.getElementById('att-name');
+                const db = DB.get();
+                const session = db.sessions.find(s => s.id === this.currentSessionId);
+
+                // 6) STATUS DECISION LOGIC
+                // Rules: now <= start => KELDI; start < now <= end => KECHIKDI; now > end => KELMADI
+                const now = new Date();
+                const nowTimeStr = now.toTimeString().slice(0, 5); // "HH:MM" format
+                
+                let status = 'KELDI';
+                if (nowTimeStr > session.endTime) status = 'KELMADI';
+                else if (nowTimeStr > session.startTime) status = 'KECHIKDI';
+
+                this.updateDiag('last-decision', status);
+                document.getElementById('chk-match').checked = true;
+
+                const existing = db.attendance.find(a => a.sessionId === session.id && a.studentId === student.id);
+                if (existing) {
+                    statusEl.innerHTML = `<span style="color:var(--warning)">${student.name} avval belgilangan!</span>`;
+                    nameEl.innerText = student.name + ' ' + student.surname;
+                    return;
+                }
+
+                statusEl.innerHTML = `<span style="color:var(--success)">✅ TANILDI: ${status}</span>`;
+                nameEl.innerText = student.name + ' ' + student.surname;
+
+                // 7) SAVE ATTENDANCE
+                Actions.saveMark(session.id, student.id, status, true, 'FaceID');
+                document.getElementById('chk-saved').checked = true;
+                confetti({ particleCount: 50, spread: 80, origin: { y: 0.7 } });
+            },
+
+            processUnknown() {
+                const statusEl = document.getElementById('att-status');
+                statusEl.innerHTML = '<span style="color:var(--danger)">Tanimadim (UNKNOWN)</span>';
+                this.updateDiag('last-decision', 'UNKNOWN');
+                document.getElementById('chk-unknown').checked = true;
+                this.showManualFallback();
+            },
+
+            showManualFallback() {
+                const zone = document.getElementById('manual-fallback');
+                const sel = document.getElementById('manual-student-select');
+                const db = DB.get();
+                const session = db.sessions.find(s => s.id === this.currentSessionId);
+                const members = db.group_members.filter(m => m.groupId === session.groupId);
+                const students = db.students.filter(s => members.some(m => m.studentId === s.id) && s.status === 'active');
+                
+                sel.innerHTML = '<option value="">O‘quvchini tanlang...</option>' + 
+                    students.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
+                zone.style.display = 'block';
+            },
+
+            confirmManual() {
+                const sid = document.getElementById('manual-student-select').value;
+                if (!sid) return;
+                const student = DB.get().students.find(s => s.id === sid);
+                if (student) this.processMatch(student);
+                document.getElementById('manual-fallback').style.display = 'none';
+            },
+
+            toggleCam() {
+                this.mode = this.mode === 'user' ? 'environment' : 'user';
+                this.stop();
+                this.start();
+            },
+
+            stop() {
+                this.active = false;
+                if (this.stream) {
+                    this.stream.getTracks().forEach(t => t.stop());
+                    this.stream = null;
+                }
+                const scan = document.getElementById('att-scan');
+                const setup = document.getElementById('att-setup');
+                if (scan) scan.style.display = 'none';
+                if (setup) setup.style.display = 'block';
+                document.getElementById('iframe-warn').style.display = 'none';
+            },
+
+            async enroll(sid) {
+                if (!Engine.faceModelsLoaded) {
+                    Swal.fire({ title: '🤖 AI yuklanmoqda...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+                    try {
+                        await Engine.loadFaceModels();
+                        Swal.close();
+                    } catch (e) {
+                        return Swal.fire('Xato', 'Face AI yuklanmadi', 'error');
+                    }
+                }
+
+                let curFacing = 'user';
+                let enStream = null;
+                let enrollActive = true;
+                let enDescriptors = []; 
+                let lastDetImg = null;
+
+                const startCam = async (mode) => {
+                    const v = document.getElementById('en-vid');
+                    if (enStream) enStream.getTracks().forEach(t => t.stop());
+                    try {
+                        enStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode, width: { ideal: 1280 } } });
+                        v.srcObject = enStream;
+                        await v.play();
+                    } catch (e) { Swal.showValidationMessage('Kameraga ulanib bo\'lmadi'); }
+                };
+
+                const { value: ok, isConfirmed } = await Swal.fire({
+                    title: 'FaceID Ro\'yxatdan o\'tkazish',
+                    width: '600px',
+                    html: `
+                        <div class="face-camera-wrap" style="min-height:350px; border-radius:1rem; position:relative;">
+                            <video id="en-vid" autoplay muted playsinline></video>
+                            <div class="face-oval"></div>
+                            <button type="button" id="cam-switch" class="btn btn-ghost" style="position:absolute; bottom:1rem; right:1rem; padding:0.5rem; z-index:1000;"><i data-lucide="refresh-cw"></i></button>
+                        </div>
+                        <p id="en-status" style="margin-top:1rem; font-size:1.1rem; font-weight:bold; color:var(--warning);">Yuz kutilmoqda...</p>
+                        <p style="color:var(--text-dim); font-size:0.9rem; margin-top:0.5rem;">Sifatli tanish uchun boshingizni biroz harakatlantiring</p>`,
+                    confirmButtonText: '✅ Saqlash (Tasdiqlash)',
+                    showCancelButton: true,
+                    cancelButtonText: 'Bekor',
+                    didOpen: () => {
+                        lucide.createIcons();
+                        document.getElementById('cam-switch').onclick = () => {
+                            curFacing = curFacing === 'user' ? 'environment' : 'user';
+                            startCam(curFacing);
+                        };
+                        startCam(curFacing);
+
+                        const v = document.getElementById('en-vid');
+                        const st = document.getElementById('en-status');
+
+                        const loop = async () => {
+                            if (!enrollActive) return;
+                            try {
+                                if (v.videoWidth && !v.paused && enDescriptors.length < 5) {
+                                    const vInfo = await faceapi.detectSingleFace(v).withFaceLandmarks().withFaceDescriptor();
+                                    if (vInfo) {
+                                        enDescriptors.push(vInfo.descriptor);
+                                        if(!lastDetImg) {
+                                            const canvas = document.createElement('canvas');
+                                            canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+                                            canvas.getContext('2d').drawImage(v, 0, 0);
+                                            const faces = await faceapi.extractFaces(canvas, [vInfo.detection.box]);
+                                            lastDetImg = faces[0]?.toDataURL();
+                                        }
+
+                                        if (enDescriptors.length >= 5) {
+                                            st.innerHTML = `✅ Tayyor! (5/5)<br><small style="color:var(--text-dim)">"Saqlash" ni bosing</small>`;
+                                            st.style.color = 'var(--success)';
+                                        } else {
+                                            st.innerHTML = `🧬 Skanerlanmoqda... (${enDescriptors.length}/5)`;
+                                        }
+                                    } else {
+                                        st.innerHTML = `📸 Yuz kutilmoqda...`;
+                                        st.style.color = 'var(--warning)';
+                                    }
+                                }
+                            } catch (e) { }
+                            if (enrollActive) setTimeout(loop, 100);
+                        };
+                        v.addEventListener('playing', loop, { once: true });
+                    },
+                    willClose: () => {
+                        enrollActive = false;
+                        if (enStream) enStream.getTracks().forEach(t => t.stop());
+                    },
+                    preConfirm: async () => {
+                        if (enDescriptors.length < 5) {
+                            Swal.showValidationMessage('❌ Skanerlash yakunlanmadi!');
+                            return false;
+                        }
+                        let meanDesc = new Float32Array(128);
+                        for (let i = 0; i < 128; i++) {
+                            let sum = 0;
+                            for (let d = 0; d < enDescriptors.length; d++) { sum += enDescriptors[d][i]; }
+                            meanDesc[i] = sum / enDescriptors.length;
+                        }
+                        return { data: Array.from(meanDesc), img: lastDetImg };
+                    }
+                });
+
+                if (enStream) enStream.getTracks().forEach(t => t.stop());
+
+                if (isConfirmed && ok) {
+                    const db = DB.get();
+                    const s = db.students.find(x => x.id === sid);
+                    if (s) {
+                        s.faceData = ok.data;
+                        s.faceImg = ok.img;
+                        DB.save(db);
+                        Swal.fire('✅ Muvaffaqiyatli', 'FaceID saqlandi!', 'success').then(() => Engine.navigate('students'));
+                    }
+                }
+            }
+        };
+
+        window.onload = () => Engine.init();
+    </script>
+</body>
+
+</html>
