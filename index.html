@@ -48,6 +48,7 @@
                 radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
                 radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
             background-attachment: fixed;
+            overflow-x: hidden;
         }
 
         /* Essential Layout */
@@ -66,7 +67,7 @@
             border-right: 1px solid var(--border);
             backdrop-filter: blur(20px);
             z-index: 1000;
-            transition: 0.3s;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
         }
@@ -78,25 +79,104 @@
             width: calc(100% - 280px);
         }
 
+        /* Mobile First adjustments */
         @media (max-width: 1024px) {
             #sidebar {
                 transform: translateX(-100%);
-                width: 300px;
+                width: 280px;
             }
 
             #sidebar.active {
                 transform: translateX(0);
+                box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
             }
 
             #main {
                 margin-left: 0;
                 width: 100%;
                 padding: 1rem;
-                padding-top: 5rem;
+                padding-top: 5.5rem;
             }
 
             .mobile-header {
                 display: flex !important;
+            }
+
+            /* Form inputs 100% width on mobile */
+            .form-control,
+            .btn {
+                width: 100% !important;
+            }
+
+            /* Responsive Tables to Card List */
+            .table-container table,
+            .table-container thead,
+            .table-container tbody,
+            .table-container th,
+            .table-container td,
+            .table-container tr {
+                display: block;
+            }
+
+            .table-container thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            .table-container tr {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid var(--border);
+                margin-bottom: 1rem;
+                border-radius: 1rem;
+                padding: 0.5rem;
+            }
+
+            .table-container td {
+                border: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                position: relative;
+                padding-left: 45%;
+                min-height: 3rem;
+                display: flex;
+                align-items: center;
+                text-align: right;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+            }
+
+            .table-container td:last-child {
+                border-bottom: 0;
+            }
+
+            .table-container td:before {
+                content: attr(data-label);
+                position: absolute;
+                left: 1rem;
+                width: 40%;
+                text-align: left;
+                font-weight: 600;
+                color: var(--text-dim);
+                font-size: 0.85rem;
+            }
+
+            /* FaceID Camera on Mobile */
+            .face-camera-wrap {
+                height: 70vh !important;
+                max-width: 100% !important;
+                border-radius: 1rem !important;
+            }
+
+            .face-camera-wrap video {
+                height: 100% !important;
+            }
+
+            #btn-identify {
+                position: sticky;
+                bottom: 1rem;
+                z-index: 10;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                height: 60px;
             }
         }
 
@@ -147,29 +227,36 @@
             border-radius: 1.5rem;
             padding: 1.5rem;
             backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
         .btn {
-            padding: 0.8rem 1.5rem;
+            padding: 0.9rem 1.5rem;
             border-radius: 1rem;
             border: none;
             cursor: pointer;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
             transition: 0.2s;
+            white-space: nowrap;
         }
 
         .btn-primary {
             background: var(--primary);
             color: #000;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
         }
 
         .btn-ghost {
@@ -184,9 +271,9 @@
         }
 
         .btn-sm {
-            padding: 0.4rem 0.8rem;
+            padding: 0.5rem 1rem;
             font-size: 0.85rem;
-            border-radius: 0.6rem;
+            border-radius: 0.8rem;
         }
 
         /* Forms */
@@ -199,36 +286,43 @@
             color: #fff;
             margin-top: 0.5rem;
             outline: none;
+            font-size: 1rem;
         }
 
         .form-control:focus {
             border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            margin-top: 1rem;
+            display: block;
         }
 
         /* Table */
         .table-container {
             overflow-x: auto;
-            margin-top: 1rem;
             border-radius: 1rem;
-            border: 1px solid var(--border);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: rgba(0, 0, 0, 0.1);
         }
 
         th {
             text-align: left;
-            padding: 1rem;
+            padding: 1.2rem;
             color: var(--text-dim);
             font-weight: 500;
             font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
         }
 
         td {
-            padding: 1rem;
+            padding: 1.2rem;
             border-top: 1px solid var(--border);
         }
 
@@ -243,15 +337,14 @@
             background: #000;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
             min-height: 420px;
+            height: 420px;
         }
 
         .face-camera-wrap video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            min-height: 420px;
             display: block;
-            /* Kamera ravshanligini oshirish */
             filter: brightness(1.1) contrast(1.05);
         }
 
@@ -260,13 +353,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 220px;
-            height: 300px;
+            width: 200px;
+            height: 280px;
             border: 3px solid var(--primary);
             border-radius: 50%;
             pointer-events: none;
-            /* Qora overlay olib tashlandi - kamera endi ravshan ko'rinadi */
-            box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.25), inset 0 0 20px rgba(251, 191, 36, 0.15);
+            box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(251, 191, 36, 0.15);
             animation: ovalPulse 2s ease-in-out infinite;
         }
 
@@ -275,45 +367,23 @@
             0%,
             100% {
                 border-color: var(--primary);
-                box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.25), 0 0 15px rgba(251, 191, 36, 0.4);
+                box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.3), 0 0 15px rgba(251, 191, 36, 0.4);
             }
 
             50% {
                 border-color: #fef3c7;
-                box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.25), 0 0 30px rgba(251, 191, 36, 0.7);
-            }
-        }
-
-        /* FaceID loading bar */
-        #face-load-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
-            background-size: 200% 100%;
-            animation: barSlide 1.5s linear infinite;
-            z-index: 9998;
-        }
-
-        @keyframes barSlide {
-            0% {
-                background-position: 200% 0
-            }
-
-            100% {
-                background-position: -200% 0
+                box-shadow: 0 0 0 1500px rgba(0, 0, 0, 0.3), 0 0 30px rgba(251, 191, 36, 0.7);
             }
         }
 
         /* Badge */
         .badge {
-            padding: 0.3rem 0.8rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 2rem;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .badge-success {
@@ -331,7 +401,7 @@
             color: var(--warning);
         }
 
-        /* Smooth Transition */
+        /* Animation */
         .animate-in {
             animation: fadeIn 0.4s ease-out;
         }
@@ -348,64 +418,76 @@
             }
         }
 
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(251, 191, 36, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
         @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
         }
 
-        /* Spinner */
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(251, 191, 36, 0.1);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        /* Diagnosis Panel Styles */
         .diag-panel {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.9);
+            margin-top: 1.5rem;
+            padding: 1.2rem;
+            background: rgba(15, 23, 42, 0.95);
             border: 1px solid var(--border);
-            border-radius: 1rem;
+            border-radius: 1.2rem;
             font-size: 0.8rem;
             text-align: left;
             color: var(--text-dim);
             backdrop-filter: blur(10px);
         }
+
         .diag-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
-            margin-top: 0.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.8rem;
         }
+
         .diag-item {
             display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 2px;
+            flex-direction: column;
+            gap: 2px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 4px;
         }
+
         .status-val {
             color: var(--text);
-            font-weight: 500;
+            font-weight: 600;
         }
-        .status-val.true { color: var(--success); }
-        .status-val.false { color: var(--danger); }
 
-        /* Checklist Styles */
+        .status-val.true {
+            color: var(--success);
+        }
+
+        .status-val.false {
+            color: var(--danger);
+        }
+
         .checklist-item {
             display: flex;
             align-items: center;
             gap: 0.8rem;
-            padding: 0.5rem 0;
+            padding: 0.8rem 0;
             border-bottom: 1px solid var(--border);
         }
+
+        .checklist-item:last-child {
+            border-bottom: 0;
+        }
+
         .checklist-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             accent-color: var(--primary);
         }
     </style>
@@ -454,7 +536,7 @@
                     <div
                         style="width:42px; height:42px; background:linear-gradient(135deg,#fbbf24,#f59e0b); border-radius:0.8rem; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;">
                         ♟️</div>
-                    <h2 style="font-size:1.4rem; font-weight:800; tracking:-0.02em;">CHESS CLUB</h2>
+                    <h2 style="font-size:1.4rem; font-weight:800; letter-spacing:-0.02em;">CHESS CLUB</h2>
                 </div>
                 <nav id="nav-list" style="flex:1; padding-top:1rem; overflow-y:auto;">
                     <!-- Nav Items Rendered Here -->
@@ -472,6 +554,15 @@
     </div>
 
     <script>
+        // --- UTILS ---
+        const Utils = {
+            timeToMin(timeStr) {
+                if (!timeStr) return 0;
+                const [h, m] = timeStr.split(':').map(Number);
+                return (h * 60) + m;
+            }
+        };
+
         // --- CONFIG & CONSTANTS ---
         const TG_BOT_TOKEN = '8718819420:AAEsc4a5H_UcfDetGFoHh3tzXHOJAIRCD3s';
         const TG_URL = `https://api.telegram.org/bot${TG_BOT_TOKEN}`;
@@ -516,9 +607,10 @@
                             groups: [],
                             group_members: [],
                             sessions: [],
-                            attendance: [],
+                            attendance_records: [],
                             absences: [],
                             coin_ledger: [],
+                            freeze: [],
                             requests: [],
                             settings: { monthlyLessons: 12, lessonCost: 50000, boshadminTgChatId: '' },
                             transactions: []
@@ -529,6 +621,7 @@
                     }
                 }
                 this.checkMonthReset();
+                this.migrate();
             },
             get() {
                 if (!this.local) this.local = JSON.parse(localStorage.getItem('chess_stabil_db'));
@@ -569,8 +662,16 @@
                 if (!db.meta.lastTgUpdateId) { db.meta.lastTgUpdateId = 0; changed = true; }
                 if (!db.group_members) { db.group_members = []; changed = true; }
                 if (!db.sessions) { db.sessions = []; changed = true; }
+                if (!db.attendance_records) {
+                    db.attendance_records = db.attendance || [];
+                    delete db.attendance;
+                    changed = true;
+                }
                 if (!db.absences) { db.absences = []; changed = true; }
                 if (!db.coin_ledger) { db.coin_ledger = []; changed = true; }
+                if (!db.freeze) { db.freeze = []; changed = true; }
+                if (!db.settings) { db.settings = { boshadminTgChatId: '' }; changed = true; }
+                if (!db.settings.boshadminTgChatId) { db.settings.boshadminTgChatId = ''; changed = true; }
 
                 if (changed && db.students) {
                     db.students.forEach(s => {
@@ -580,8 +681,6 @@
                     });
                 }
 
-                if (!db.settings.boshadminTgChatId) { db.settings.boshadminTgChatId = ''; changed = true; }
-                // boshadmin ni yangilaymiz
                 const ba = db.admins.find(a => a.role === 'BOSHADMIN');
                 if (ba && ba.user === 'root') { ba.user = 'boshadmin'; ba.pass = '123'; changed = true; }
                 if (changed) this.save(db);
@@ -668,10 +767,10 @@
                 const pts = status === 'KELDI' ? 5 : status === 'KECHIKDI' ? 3 : 0;
                 let text = `♟️ <b>DAVOMAT</b>\n👤 O'quvchi: ${s.name} ${s.surname}\n`;
                 if (status === 'KELMADI') {
-                    text += `📍 Holat: <b>KELMADI</b>\n💡 Coin: +0\n${extraText}`;
+                    text += `📍 Holat: <b>KELMADI</b>\n🏆 Coin: +0\n${extraText}`;
                 } else {
                     const tStr = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-                    text += `⏰ Vaqt: ${tStr}\n📍 Holat: <b>${status}</b>\n🏆 Coin: +${pts}\n`;
+                    text += `⏰ Vaqt: ${tStr}\n📍 Holat: <b>${status === 'KECHIKDI' ? 'kechikib keldi' : 'keldi'}</b>\n🏆 Coin: +${pts}\n${extraText}`;
                 }
 
                 for (let cid of s.tgChatIds) {
@@ -691,9 +790,7 @@
                 { id: 'absent', label: 'Kelmaganlar', icon: 'user-x', role: 'ALL' },
                 { id: 'frozen', label: 'Muzlatilganlar', icon: 'snowflake', role: 'ALL' },
                 { id: 'rating', label: 'Reyting', icon: 'trophy', role: 'ALL' },
-                { id: 'payments', label: 'To\'lovlar', icon: 'banknote', role: 'ALL' },
                 { id: 'requests', label: 'So\'rovlar', icon: 'clipboard-list', role: 'BOSHADMIN' },
-                { id: 'settings-oy', label: 'Oy sozlamalari', icon: 'calendar-days', role: 'BOSHADMIN' },
                 { id: 'settings-pass', label: 'Sozlamalar', icon: 'key-round', role: 'ALL' },
                 { id: 'telegram', label: 'Telegram Xabar', icon: 'send', role: 'BOSHADMIN' }
             ],
@@ -703,7 +800,7 @@
 
             async init() {
                 await DB.init();
-                DB.migrate(); // Eski DB ni yangi formatga o'tkazish
+                // DB.migrate(); // Eski DB ni yangi formatga o'tkazish - now called inside DB.init()
                 // Face models yuklanmaydi — faqat FaceID ishlatilganda yuklanadi
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -758,6 +855,11 @@
 
             logout() { location.reload(); },
 
+            toggleSidebar() {
+                const sb = document.getElementById('sidebar');
+                sb.classList.toggle('active');
+            },
+
             renderNav() {
                 const nav = document.getElementById('nav-list');
                 nav.innerHTML = this.views
@@ -781,9 +883,7 @@
                     case 'absent': Views.absent(target, db); break;
                     case 'frozen': Views.frozen(target, db); break;
                     case 'rating': Views.rating(target, db); break;
-                    case 'payments': Views.payments(target, db); break;
                     case 'requests': Views.requests(target, db); break;
-                    case 'settings-oy': Views.settingsOy(target, db); break;
                     case 'settings-pass': Views.settingsPass(target, db); break;
                     case 'telegram': Views.telegram(target, db); break;
                 }
@@ -812,10 +912,6 @@
                             <h3 style="color:var(--text-dim); font-size:1rem;">Bugungi Darslar</h3>
                             <div style="font-size:2rem; font-weight:bold; margin-top:0.5rem;">${db.sessions.filter(s => s.date === new Date().toISOString().split('T')[0]).length}</div>
                         </div>
-                        <div class="card" style="border-left:4px solid var(--danger)">
-                            <h3 style="color:var(--text-dim); font-size:1rem;">Kutilayotgan To'lovlar</h3>
-                            <div style="font-size:2rem; font-weight:bold; margin-top:0.5rem; color:${db.students.reduce((a, b) => a + (b.balance || 0), 0) < 0 ? 'var(--danger)' : 'var(--success)'}">${db.students.reduce((a, b) => a + (b.balance || 0), 0)} UZS</div>
-                        </div>
                     </div>
                 `;
             },
@@ -829,23 +925,22 @@
                     <div class="card">
                         <div class="table-container">
                             <table>
-                                <thead><tr><th>F.I.O</th><th>Guruh</th><th>Balans</th><th>FaceID</th><th>Amallar</th></tr></thead>
+                                <thead><tr><th>F.I.O</th><th>Guruh</th><th>FaceID</th><th>Amallar</th></tr></thead>
                                 <tbody>
                                     ${db.students.map(s => `
                                         <tr>
-                                            <td><strong>${s.name} ${s.surname}</strong><br><small style="color:var(--text-dim);">ID: ${s.id}</small></td>
-                                            <td>${db.group_members.find(g => g.studentId === s.id) ? db.groups.find(g => g.id === db.group_members.find(x => x.studentId === s.id).groupId)?.name || 'Yo\'q' : 'Yo\'q'}</td>
-                                            <td style="color:${s.balance < 0 ? 'var(--danger)' : 'var(--success)'}">${s.balance} so'm</td>
-                                            <td><i data-lucide="${s.faceData ? 'check-circle' : 'circle'}" style="color:${s.faceData ? 'var(--success)' : 'var(--text-dim)'}"></i></td>
-                                            <td>
-                                                <div style="display:flex; gap:0.5rem;">
+                                            <td data-label="F.I.O"><strong>${s.name} ${s.surname}</strong><br><small style="color:var(--text-dim);">ID: ${s.studentCode || s.id}</small></td>
+                                            <td data-label="Guruh">${db.group_members.find(g => g.studentId === s.id) ? db.groups.find(g => g.id === db.group_members.find(x => x.studentId === s.id).groupId)?.name || 'Yo\'q' : 'Yo\'q'}</td>
+                                            <td data-label="FaceID"><i data-lucide="${s.faceData ? 'check-circle' : 'circle'}" style="color:${s.faceData ? 'var(--success)' : 'var(--text-dim)'}"></i></td>
+                                            <td data-label="Amallar">
+                                                <div style="display:flex; gap:0.5rem; justify-content: flex-end;">
                                                     <button onclick="Actions.viewProfile('${s.id}')" class="btn btn-ghost btn-sm"><i data-lucide="eye"></i></button>
                                                     <button onclick="Actions.editStudent('${s.id}')" class="btn btn-ghost btn-sm"><i data-lucide="edit"></i></button>
                                                     <button onclick="Actions.deleteStudent('${s.id}')" class="btn btn-danger btn-sm"><i data-lucide="trash"></i></button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    `).join('') || '<tr><td colspan="5" style="text-align:center; padding:2rem;">O\'quvchilar mavjud emas</td></tr>'}
+                                    `).join('') || '<tr><td colspan="4" style="text-align:center; padding:2rem;">O\'quvchilar mavjud emas</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -920,54 +1015,23 @@
                             </div>
 
                             <h2 id="att-name" style="margin-top:1.5rem; color:var(--primary); min-height:40px;"></h2>
-                            <button id="btn-identify" onclick="FaceID.identify()" class="btn btn-primary" style="margin-top:0.5rem; width:100%; justify-content:center; padding:1.2rem; font-size:1.1rem; gap:0.5rem;"><i data-lucide="scan-face"></i> Yuzni Skanerlash (Identify)</button>
+                            <button id="btn-identify" onclick="FaceID.identify()" class="btn btn-primary" style="margin-top:0.5rem; width:100%; justify-content:center; padding:1.2rem; font-size:1.1rem; gap:0.5rem;"><i data-lucide="scan-face"></i> Yuzni Skanerlash</button>
                             
-                            <!-- Diagnosis Panel -->
-                            <div class="diag-panel">
-                                <h4 style="color:var(--primary); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.5rem; font-size:0.75rem;"><i data-lucide="activity" style="width:14px;"></i> DIAGNOSIS PANEL</h4>
-                                <div class="diag-grid">
-                                    <div class="diag-item">HTTPS status: <span id="diag-https" class="status-val">-</span></div>
-                                    <div class="diag-item">Iframe ichidami: <span id="diag-iframe" class="status-val">-</span></div>
-                                    <div class="diag-item">Camera permission state: <span id="diag-perm" class="status-val">-</span></div>
-                                    <div class="diag-item">videoWidth / videoHeight: <span id="diag-res" class="status-val">-</span></div>
-                                    <div class="diag-item">stream tracks count: <span id="diag-tracks" class="status-val">-</span></div>
-                                    <div class="diag-item">Selected camera: <span id="diag-cam" class="status-val">-</span></div>
-                                    <div class="diag-item">candidatesCount: <span id="diag-candidates" class="status-val">-</span></div>
-                                    <div class="diag-item">lastIdentifyRequestTime: <span id="diag-last-req" class="status-val">-</span></div>
-                                    <div class="diag-item">lastStatusDecision: <span id="diag-last-decision" class="status-val">-</span></div>
-                                </div>
-                                <div style="margin-top:0.5rem; border-top:1px solid var(--border); padding-top:0.5rem;">
-                                    <div>getUserMedia error: <span id="diag-error" style="color:var(--danger); font-family:monospace;">-</span></div>
-                                    <div style="margin-top:0.2rem;">lastIdentifyResponse (raw): <pre id="diag-last-res" style="background:rgba(0,0,0,0.5); padding:0.4rem; border-radius:0.4rem; font-size:0.7rem; max-height:60px; overflow-y:auto; color:var(--text-dim);">-</pre></div>
-                                </div>
-                            </div>
 
-                            <!-- Manual Fallback Dropdown (Will be shown if identify fails) -->
+
+                            <!-- Manual Fallback Dropdown -->
                             <div id="manual-fallback" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:1rem; text-align:left;">
-                                <label style="font-size:0.85rem; color:var(--primary)">Fallback: Bu kim? (Manual Confirm)</label>
+                                <label style="font-size:0.85rem; color:var(--primary)">Qo'lda tanlash:</label>
                                 <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
                                     <select id="manual-student-select" class="form-control" style="margin-top:0; border-color:var(--primary)"></select>
-                                    <button onclick="FaceID.confirmManual()" class="btn btn-primary btn-sm">OK</button>
+                                    <button onclick="FaceID.confirmManual()" class="btn btn-primary btn-sm">TASDIQLASH</button>
                                 </div>
                             </div>
 
-                            <button onclick="FaceID.stop(); Actions.manualAttendance()" class="btn btn-ghost" style="margin-top:1.5rem; width:100%; justify-content:center;">Darsni Yakunlash / Qo'lda Olish</button>
+                            <button onclick="FaceID.stop(); Actions.manualAttendance()" class="btn btn-ghost" style="margin-top:1.5rem; width:100%; justify-content:center;">Orqaga qaytish / Qo'lda belgilash</button>
                         </div>
                     </div>
                     
-                    <!-- Quick Test Checklist -->
-                    <div class="card" style="margin-top:2rem; border-color:var(--primary); background:rgba(251, 191, 36, 0.03);">
-                        <h3 style="margin-bottom:1rem; color:var(--primary); font-size:1.1rem; display:flex; align-items:center; gap:0.5rem;"><i data-lucide="check-square"></i> QUICK TEST CHECKLIST</h3>
-                        <div style="display:flex; flex-direction:column; text-align:left;">
-                            <div class="checklist-item"><input type="checkbox" id="chk-video" disabled> <span>Kamera video chiqdi (videoWidth > 0)</span></div>
-                            <div class="checklist-item"><input type="checkbox" id="chk-candidates" disabled> <span>candidatesCount > 0</span></div>
-                            <div class="checklist-item"><input type="checkbox" id="chk-no-face" disabled> <span>Kadrda yuz yo'q bo'lsa "YUZ TOPILMADI" chiqdi</span></div>
-                            <div class="checklist-item"><input type="checkbox" id="chk-identify" disabled> <span>Yuz bo'lsa identify chaqildi</span></div>
-                            <div class="checklist-item"><input type="checkbox" id="chk-unknown" disabled> <span>UNKNOWN bo'lsa davomat yozilmadi</span></div>
-                            <div class="checklist-item"><input type="checkbox" id="chk-match" disabled> <span>Match bo'lsa status to'g'ri chiqdi (KELDI/KECHIKDI)</span></div>
-                            <div class="checklist-item"><input type="checkbox" id="chk-saved" disabled> <span>attendance_records saqlandi</span></div>
-                        </div>
-                    </div>
 
                     <!-- No Face Results (Hidden list for groups with no faces) -->
                     <div id="no-face-list" class="card" style="display:none; margin-top:1rem; border-color:var(--danger);">
@@ -982,13 +1046,13 @@
                             <tbody>
                                 ${recentSessions.map(sess => {
                     const g = db.groups.find(x => x.id === sess.groupId) || { name: 'Noma\'lum' };
-                    const count = db.attendance.filter(a => a.sessionId === sess.id).length;
+                    const count = db.attendance_records.filter(a => a.sessionId === sess.id).length;
                     return `
                                         <tr>
-                                            <td>${sess.date}</td>
-                                            <td>${g.name} (${sess.startTime}-${sess.endTime})</td>
-                                            <td>${sess.isClosed ? '<span class="badge badge-success">YOPILGAN</span>' : '<span class="badge badge-warning">OCHIQ</span>'} <br><small>${count} ta belgilandi</small></td>
-                                            <td>
+                                            <td data-label="Sana">${sess.date}</td>
+                                            <td data-label="Guruh">${g.name} (${sess.startTime}-${sess.endTime})</td>
+                                            <td data-label="Holat">${sess.isClosed ? '<span class="badge badge-success">YOPILGAN</span>' : '<span class="badge badge-warning">OCHIQ</span>'} <br><small>${count} ta belgilandi</small></td>
+                                            <td data-label="Amal">
                                                 <button onclick="document.getElementById('att-gid').value='${sess.groupId}'; document.getElementById('att-date').value='${sess.date}'; Actions.manualAttendance(); document.getElementById('att-setup').scrollIntoView();" class="btn btn-ghost btn-sm">Ko'rish / Tahrirlash</button>
                                             </td>
                                         </tr>
@@ -1018,9 +1082,9 @@
                                     ${openAbs.map(a => {
                     const s = db.students.find(x => x.id === a.studentId) || { name: '-', surname: '' };
                     return `<tr>
-                                            <td><strong>${s.name} ${s.surname}</strong></td>
-                                            <td>${a.date}</td>
-                                            <td><button onclick="Actions.resolveAbsent('${a.id}')" class="btn btn-success btn-sm">Qoplandi (Yopish)</button></td>
+                                            <td data-label="O'quvchi"><strong>${s.name} ${s.surname}</strong></td>
+                                            <td data-label="Qaysi Sana">${a.date}</td>
+                                            <td data-label="Amal"><button onclick="Actions.resolveAbsent('${a.id}')" class="btn btn-success btn-sm">Qoplandi (Yopish)</button></td>
                                         </tr>`;
                 }).join('') || '<tr><td colspan="3" style="text-align:center;">Qoplanishi kerak bo\'lganlar yo\'q</td></tr>'}
                                 </tbody>
@@ -1041,10 +1105,10 @@
                                 <tbody>
                                     ${top.map((s, i) => `
                                         <tr>
-                                            <td>${i + 1}</td>
-                                            <td>${s.name} ${s.surname}</td>
-                                            <td style="font-weight:700; color:var(--primary);">${s.totalPoints}</td>
-                                            <td>${Engine.user.role === 'BOSHADMIN' ? `<button onclick="Actions.addBonus('${s.id}')" class="btn btn-ghost btn-sm">+ Bonus</button>` : ''}</td>
+                                            <td data-label="№">${i + 1}</td>
+                                            <td data-label="O'quvchi">${s.name} ${s.surname}</td>
+                                            <td data-label="Ball" style="font-weight:700; color:var(--primary);">${s.totalPoints}</td>
+                                            <td data-label="Amal">${Engine.user.role === 'BOSHADMIN' ? `<button onclick="Actions.addBonus('${s.id}')" class="btn btn-ghost btn-sm">+ Bonus</button>` : ''}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -1055,32 +1119,6 @@
                 `;
             },
 
-            payments(t, db) {
-                t.innerHTML = `<h2>To'lovlar</h2><div class="grid" style="margin-top:2rem;">
-                    ${db.students.map(s => `
-                        <div class="card">
-                            <strong>${s.name} ${s.surname}</strong><br><small style="color:var(--text-dim);">${db.group_members.find(x => x.studentId === s.id) ? db.groups.find(g => g.id === db.group_members.find(x => x.studentId === s.id).groupId)?.name || '—' : '—'}</small>
-                            <div style="font-size:1.6rem; margin:1rem 0; color:${s.balance < 0 ? 'var(--danger)' : 'var(--success)'}">${s.balance} so'm</div>
-                            <button onclick="Actions.addPay('${s.id}')" class="btn btn-primary" style="width:100%; justify-content:center;">To'lov qo'shish</button>
-                        </div>
-                    `).join('')}
-                </div>`;
-            },
-
-            settingsOy(t, db) {
-                t.innerHTML = `
-                    <div class="card" style="max-width:500px; margin:0 auto;">
-                        <h2>Oy Sozlamalari</h2>
-                        <div style="margin-top:1.5rem;">
-                            <label>Oyda nechta dars (Planned)</label>
-                            <input id="set-lessons" type="number" class="form-control" value="${db.settings.monthlyLessons}">
-                            <label style="margin-top:1rem; display:block;">Dars narxi (UZS)</label>
-                            <input id="set-cost" type="number" class="form-control" value="${db.settings.lessonCost}">
-                            <button onclick="Actions.saveSettings()" class="btn btn-primary" style="width:100%; margin-top:2rem; justify-content:center;">Saqlash</button>
-                        </div>
-                    </div>
-                `;
-            },
 
             settingsPass(t, db) {
                 t.innerHTML = `<div class="card" style="max-width:400px; margin:0 auto; text-align:center;">
@@ -1091,23 +1129,35 @@
             },
 
             frozen(t, db) {
-                const frozenList = db.students.filter(s => s.status === 'frozen');
+                const now = new Date().toISOString().split('T')[0];
+                const activeFrozen = (db.freeze || []).filter(f => f.status === 'FROZEN');
+
                 t.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                        <h2>❄️ Muzlatilgan O'quvchilar</h2>
+                        <h2>❄️ Muzlatilganlar</h2>
+                        <button onclick="Actions.openFreezeModal()" class="btn btn-primary"><i data-lucide="snowflake"></i> Muzlatish</button>
                     </div>
                     <div class="card">
                         <div class="table-container">
                             <table>
-                                <thead><tr><th>F.I.O</th><th>Guruh</th><th>Amal</th></tr></thead>
+                                <thead><tr><th>O'quvchi</th><th>Guruh</th><th>Boshlanish</th><th>Tugash</th><th>Izoh</th><th>Amal</th></tr></thead>
                                 <tbody>
-                                    ${frozenList.map(s => `
+                                    ${activeFrozen.map(f => {
+                    const s = db.students.find(x => x.id === f.studentId) || { name: '?', surname: '' };
+                    const g = db.groups.find(x => x.id === f.groupId) || { name: '?' };
+                    return `
                                         <tr>
-                                            <td><strong>${s.name} ${s.surname}</strong></td>
-                                            <td>${db.groups.find(g => g.id === s.groupId)?.name || '—'}</td>
-                                            <td><button onclick="Actions.unfreeze('${s.id}')" class="btn btn-ghost btn-sm" style="color:var(--success)">✅ Qayta faollashtirish</button></td>
+                                            <td data-label="O'quvchi"><strong>${s.name} ${s.surname}</strong></td>
+                                            <td data-label="Guruh">${g.name}</td>
+                                            <td data-label="Boshlanish">${f.freezeFrom}</td>
+                                            <td data-label="Tugash">${f.freezeTo || 'Noaniq'}</td>
+                                            <td data-label="Izoh">${f.note || '-'}</td>
+                                            <td data-label="Amal">
+                                                <button onclick="Actions.unfreeze('${f.id}')" class="btn btn-ghost btn-sm" style="color:var(--success)">Muzlatishni tugatish</button>
+                                            </td>
                                         </tr>
-                                    `).join('') || '<tr><td colspan="3" style="text-align:center; padding:2rem;">Muzlatilgan o\'quvchi yo\'q</td></tr>'}
+                                    `;
+                }).join('') || '<tr><td colspan="6" style="text-align:center; padding:2rem;">Muzlatilganlar yo\'q</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -1130,11 +1180,11 @@
                                     ${pending.map(req => {
                     const s = db.students.find(x => x.id === req.studentId);
                     return `<tr>
-                                            <td><strong>${s ? s.name + ' ' + s.surname : 'Topilmadi'}</strong><br><small style="color:var(--text-dim)">ID: ${req.studentId}</small></td>
-                                            <td>${s ? (db.groups.find(g => g.id === s.groupId)?.name || '—') : '—'}</td>
-                                            <td><span class="badge badge-warning">${req.requestedBy}</span></td>
-                                            <td style="font-size:0.85rem;">${new Date(req.createdAt).toLocaleDateString('uz-UZ')}</td>
-                                            <td>
+                                            <td data-label="O'quvchi"><strong>${s ? s.name + ' ' + s.surname : 'Topilmadi'}</strong><br><small style="color:var(--text-dim)">ID: ${s ? s.studentCode : req.studentId}</small></td>
+                                            <td data-label="Guruh">${s ? (db.groups.find(g => g.id === s.groupId)?.name || '—') : '—'}</td>
+                                            <td data-label="So'ragan"><span class="badge badge-warning">${req.requestedBy}</span></td>
+                                            <td data-label="Sana" style="font-size:0.85rem;">${new Date(req.createdAt).toLocaleDateString('uz-UZ')}</td>
+                                            <td data-label="Amal">
                                                 <div style="display:flex; gap:0.5rem;">
                                                     <button onclick="Actions.approveDelete('${req.id}')" class="btn btn-primary btn-sm">✅ Ha, o'chir</button>
                                                     <button onclick="Actions.rejectDelete('${req.id}')" class="btn btn-ghost btn-sm" style="color:var(--danger);">❌ Yo'q</button>
@@ -1186,8 +1236,6 @@
                             <select id="sw-gid" class="form-control"><option value="">Guruh tanlanmagan</option>${DB.get().groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}</select>
                             <label>Qachondan boshlagan*</label>
                             <input id="sw-date" type="date" class="form-control" value="${new Date().toISOString().split('T')[0]}">
-                            <label>Oylik to'lov (UZS)*</label>
-                            <input id="sw-fee" type="number" class="form-control" value="50000">
                             <label>Student KODI (ixtiyoriy, 6 xonali. Telegram uchun)</label>
                             <input id="sw-code" class="form-control" placeholder="Avto generatsiya qilinadi">
                             
@@ -1214,7 +1262,6 @@
                             name: document.getElementById('sw-name').value,
                             surname: document.getElementById('sw-surname').value,
                             startDate: document.getElementById('sw-date').value,
-                            monthlyFee: Number(document.getElementById('sw-fee').value),
                             studentPhone: document.getElementById('sw-phone').value,
                             address: document.getElementById('sw-addr').value,
                             fatherName: document.getElementById('sw-fname').value,
@@ -1260,8 +1307,6 @@
                             <select id="ed-gid" class="form-control"><option value="">Guruh tanlanmagan</option>${db.groups.map(g => `<option value="${g.id}" ${g.id === cg ? 'selected' : ''}>${g.name}</option>`).join('')}</select>
                             <label>Qachondan boshlagan</label>
                             <input id="ed-date" type="date" class="form-control" value="${s.startDate || ''}">
-                            <label>Oylik to'lov (UZS)</label>
-                            <input id="ed-fee" type="number" class="form-control" value="${s.monthlyFee || 50000}">
                             <label>Student KODI (Telegram)</label>
                             <input id="ed-code" class="form-control" value="${s.studentCode || ''}" placeholder="Masalan: 123456">
                             
@@ -1286,7 +1331,6 @@
                             name: document.getElementById('ed-name').value,
                             surname: document.getElementById('ed-surname').value,
                             startDate: document.getElementById('ed-date').value,
-                            monthlyFee: Number(document.getElementById('ed-fee').value),
                             studentPhone: document.getElementById('ed-phone').value,
                             address: document.getElementById('ed-addr').value,
                             fatherName: document.getElementById('ed-fname').value,
@@ -1339,7 +1383,11 @@
                             const db2 = DB.get();
                             db2.students = db2.students.filter(x => x.id !== id);
                             db2.requests = db2.requests.filter(x => x.studentId !== id);
-                            db2.attendance = db2.attendance.filter(x => x.studentId !== id);
+                            db2.attendance_records = db2.attendance_records.filter(x => x.studentId !== id);
+                            db2.group_members = db2.group_members.filter(x => x.studentId !== id);
+                            db2.coin_ledger = db2.coin_ledger.filter(x => x.studentId !== id);
+                            db2.absences = db2.absences.filter(x => x.studentId !== id);
+                            db2.freeze = db2.freeze.filter(x => x.studentId !== id);
                             DB.save(db2);
                             Swal.fire('✅ O\'chirildi', `${s.name} ${s.surname} o'chirildi.`, 'success').then(() => Engine.navigate('students'));
                         }
@@ -1411,7 +1459,6 @@
                                 <strong>Guruh:</strong> ${gName}
                             </div>
                             <div style="margin-top:0.5rem">
-                                <strong>Balans:</strong> <span style="color:${s.balance < 0 ? 'var(--danger)' : 'var(--success)'}">${s.balance} so'm</span> | 
                                 <strong>Coin:</strong> <span style="color:var(--primary)">${s.totalPoints}</span>
                             </div>
                             <hr style="border:0; border-top:1px solid var(--border); margin:1.5rem 0;">
@@ -1422,6 +1469,34 @@
                                 <p><strong>Telegram:</strong> ${s.tgChatIds && s.tgChatIds.length > 0 ? 'Bog\'langan' : 'Bog\'lanmagan'}</p>
                             </div>
                             <button onclick="FaceID.enroll('${s.id}')" class="btn btn-ghost" style="margin-top:1.5rem;"><i data-lucide="scan"></i> FaceID Ro'yxatdan o'tkazish</button>
+                            
+                            ${Engine.user.role === 'BOSHADMIN' ? `
+                                <hr style="border:0; border-top:1px solid var(--border); margin:1.5rem 0;">
+                                <div style="text-align:left;">
+                                    <h4 style="margin-bottom:1rem;">Bonus Coinlar</h4>
+                                    <div class="table-container">
+                                        <table style="font-size:0.85rem">
+                                            <thead><tr><th>Sana</th><th>Coin</th><th>Izoh</th><th>Amal</th></tr></thead>
+                                            <tbody>
+                                                ${db.coin_ledger.filter(c => c.studentId === s.id && (c.type === 'BONUS' || c.amount > 0 && c.type === 'MANUAL')).map(c => `
+                                                    <tr>
+                                                        <td>${new Date(c.date).toLocaleDateString()}</td>
+                                                        <td>${c.amount}</td>
+                                                        <td>${c.note || '-'}</td>
+                                                        <td>
+                                                            <div style="display:flex; gap:0.3rem">
+                                                                <button onclick="Actions.editBonus('${c.id}')" class="btn btn-ghost btn-sm" style="padding:2px 5px">✏️</button>
+                                                                <button onclick="Actions.deleteBonus('${c.id}')" class="btn btn-danger btn-sm" style="padding:2px 5px">🗑️</button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                `).join('') || '<tr><td colspan="4" style="text-align:center">Bonuslar yo\'q</td></tr>'}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button onclick="Actions.addBonus('${s.id}')" class="btn btn-primary btn-sm" style="width:100%; margin-top:1rem">Bonus qo'shish</button>
+                                </div>
+                            ` : ''}
                         </div>
                     `,
                     showConfirmButton: false,
@@ -1473,108 +1548,177 @@
                 const g = db.groups.find(x => x.id === gid);
                 let session = db.sessions.find(x => x.groupId === gid && x.date === date);
                 if (!session) {
-                    session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start || '09:00', endTime: g.endTime || '23:59', isClosed: false };
+                    session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start, endTime: g.endTime, isClosed: false };
                     db.sessions.push(session);
                     DB.save(db);
                 }
 
-                if (session.isClosed && Engine.user.role !== 'BOSHADMIN') {
-                    return Swal.fire('Taqiq', 'Bu dars yakunlangan!', 'warning');
-                }
 
                 const gMembers = db.group_members.filter(x => x.groupId === gid).map(x => x.studentId);
-                const mems = db.students.filter(x => gMembers.includes(x.id) && x.status === 'active');
+                const mems = db.students.filter(x => gMembers.includes(x.id)); // status: 'active' check removed to see frozen
 
                 // Render list
                 document.getElementById('att-setup').innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                        <h2>${g.name} (${date})</h2>
+                        <h2 style="text-align:left;">${g.name} (${date})</h2>
                         <div style="display:flex; gap:1rem;">
-                            <button onclick="Engine.navigate('attendance')" class="btn btn-ghost">Orqaga</button>
-                            ${!session.isClosed ? `<button onclick="Actions.endLesson('${session.id}')" class="btn btn-primary">Darsni Tugatish</button>` : `<span class="badge badge-danger">YOPILGAN</span>`}
+                            <button onclick="Engine.navigate('attendance')" class="btn btn-ghost btn-sm">Orqaga</button>
                         </div>
                     </div>
                     <div class="table-container" style="text-align:left;">
                         <table>
-                            <thead><tr><th>O'quvchi</th><th>Holat</th></tr></thead>
+                            <thead><tr><th>O'quvchi</th><th>Holat</th><th>Amal</th></tr></thead>
                             <tbody>
                                 ${mems.map(s => {
-                    const att = db.attendance.find(a => a.sessionId === session.id && a.studentId === s.id);
-                    let btnHtml = '';
-                    if (att) {
-                        btnHtml = `<span class="badge ${att.status === 'KELDI' ? 'badge-success' : att.status === 'KECHIKDI' ? 'badge-warning' : 'badge-danger'}">${att.status}</span>
-                                        ${!session.isClosed ? `<button onclick="Actions.editMark('${session.id}', '${s.id}')" class="btn btn-ghost btn-sm" style="margin-left:0.5rem">✏️ O'zgartirish</button>` : ''}`;
+                    const att = db.attendance_records.find(a => a.sessionId === session.id && a.studentId === s.id);
+                    const freeze = (db.freeze || []).find(f => f.studentId === s.id && f.groupId === gid && f.status === 'FROZEN' && date >= f.freezeFrom && (!f.freezeTo || date <= f.freezeTo));
+
+                    let statusHtml = '';
+                    let actionHtml = '';
+
+                    if (freeze) {
+                        statusHtml = `<span class="badge badge-warning">MUZLATILGAN</span>`;
+                        actionHtml = `<button disabled class="btn btn-ghost btn-sm" style="opacity:0.5; cursor:not-allowed;">Muzlatilgan</button>`;
+                    } else if (att) {
+                        statusHtml = `<span class="badge ${att.status === 'KELDI' ? 'badge-success' : att.status === 'KECHIKDI' ? 'badge-warning' : 'badge-danger'}">${att.status}</span> <br><small>${att.checkInTime || ''}</small>`;
+                        actionHtml = `<button onclick="Actions.editMark('${session.id}', '${s.id}')" class="btn btn-ghost btn-sm">✏️ Tahrirlash</button>`;
                     } else {
-                        btnHtml = `
-                                            <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELDI')" class="btn btn-ghost btn-sm">КELDI</button>
-                                            <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KECHIKDI')" class="btn btn-ghost btn-sm">S</button>
-                                            <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELMADI')" class="btn btn-danger btn-sm">X</button>
-                                        `;
+                        statusHtml = `<span style="color:var(--text-dim)">Belgilanmagan</span>`;
+                        actionHtml = `
+                            <div style="display:flex; gap:0.4rem;">
+                                <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELDI')" class="btn btn-primary btn-sm">KELDI</button>
+                                <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KECHIKDI')" class="btn btn-ghost btn-sm">KECHIKDI</button>
+                                <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELMADI')" class="btn btn-danger btn-sm">KELMADI</button>
+                            </div>
+                        `;
                     }
-                    return `<tr><td>${s.name} ${s.surname}</td><td id="mcell-${s.id}">${btnHtml}</td></tr>`;
-                }).join('') || '<tr><td colspan="2" style="text-align:center; padding:2rem">Bu guruhda o\'quvchi yo\'q</td></tr>'}
+                    return `<tr><td data-label="O'quvchi"><strong>${s.name} ${s.surname}</strong></td><td data-label="Holat">${statusHtml}</td><td data-label="Amal">${actionHtml}</td></tr>`;
+                }).join('') || '<tr><td colspan="3" style="text-align:center; padding:2rem">Bu guruhda o\'quvchi yo\'q</td></tr>'}
                             </tbody>
                         </table>
                     </div>
                 `;
             },
 
-            applyMark(sessionId, studentId, status) {
+            applyMark(sessionId, studentId, status, isJustified = false, note = '') {
                 if (status === 'KELMADI') {
                     Swal.fire({
-                        title: 'Kelmadi', html: `<input id="sabab-input" class="form-control" placeholder="Sabab...">`,
-                        showCancelButton: true, confirmButtonText: 'Sababli', cancelButtonText: 'Sababsiz'
+                        title: 'Kelmadi',
+                        html: `
+                            <label>Izoh/Sabab</label>
+                            <input id="sabab-input" class="form-control" placeholder="Masalan: Kasal edi...">
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Sababli',
+                        cancelButtonText: 'Sababsiz'
                     }).then(r => {
+                        if (r.dismiss === Swal.DismissReason.backdrop || r.dismiss === Swal.DismissReason.esc) return;
                         Actions.saveMark(sessionId, studentId, status, r.isConfirmed, document.getElementById('sabab-input')?.value || '');
                     });
                 } else {
-                    Actions.saveMark(sessionId, studentId, status, false, '');
+                    Actions.saveMark(sessionId, studentId, status, isJustified, note);
                 }
             },
 
             editMark(sessionId, sid) {
-                Swal.fire({ title: 'Davomatni tahrirlash', text: 'Davomat qayta kiritiladimi?', showCancelButton: true }).then(r => {
+                const db = DB.get();
+                const att = db.attendance_records.find(a => a.sessionId === sessionId && a.studentId === sid);
+                if (!att) return;
+
+                Swal.fire({
+                    title: 'Davomatni tahrirlash',
+                    html: `
+                        <div style="text-align:left;">
+                            <label>Vaqt (HH:MM)</label>
+                            <input id="edit-time" type="time" class="form-control" value="${att.checkInTime || ''}">
+                            <label style="margin-top:1rem;">Holat (Ixtiyoriy, tanlamasangiz vaqtga qarab aniqlanadi)</label>
+                            <select id="edit-status" class="form-control">
+                                <option value="">Vaqt bo'yicha aniqlash</option>
+                                <option value="KELDI" ${att.status === 'KELDI' ? 'selected' : ''}>KELDI (5 coin)</option>
+                                <option value="KECHIKDI" ${att.status === 'KECHIKDI' ? 'selected' : ''}>KECHIKDI (3 coin)</option>
+                                <option value="KELMADI" ${att.status === 'KELMADI' ? 'selected' : ''}>KELMADI (0 coin)</option>
+                            </select>
+                            <label style="margin-top:1rem;">Sabab/Izoh (KELMADI bo'lsa)</label>
+                            <input id="edit-note" class="form-control" value="${att.note || ''}" placeholder="Masalan: Kasal edi...">
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Saqlash',
+                    cancelButtonText: 'Bekor',
+                    preConfirm: () => {
+                        return {
+                            status: document.getElementById('edit-status').value,
+                            note: document.getElementById('edit-note').value,
+                            time: document.getElementById('edit-time').value
+                        };
+                    }
+                }).then(r => {
                     if (r.isConfirmed) {
-                        const db = DB.get();
-                        const att = db.attendance.find(a => a.sessionId === sessionId && a.studentId === sid);
-                        if (att) {
-                            db.attendance = db.attendance.filter(a => a.id !== att.id);
-                            db.coin_ledger = db.coin_ledger.filter(c => c.attendanceId !== att.id);
-                            Actions.recalcPoints(sid, db);
-                            DB.save(db);
-                            Actions.manualAttendance();
-                        }
+                        Actions.saveMark(sessionId, sid, r.value.status, r.value.status === 'KELMADI', r.value.note, r.value.time);
                     }
                 });
             },
 
-            saveMark(sessionId, studentId, status, isJustified, note) {
+            saveMark(sessionId, studentId, status, isJustified, note, checkInTime = null) {
                 const db = DB.get();
                 const session = db.sessions.find(x => x.id === sessionId);
-                if (session.isClosed && Engine.user.role !== 'BOSHADMIN') return Swal.fire('Xato', 'Sessiya yopilgan', 'error');
+                if (!session) return;
 
-                // Idempotent: remove existing if any
-                const existing = db.attendance.find(a => a.sessionId === sessionId && a.studentId === studentId);
-                if (existing) {
-                    db.attendance = db.attendance.filter(a => a.id !== existing.id);
-                    db.coin_ledger = db.coin_ledger.filter(c => c.attendanceId !== existing.id);
+                const existingAtt = db.attendance_records.find(a => a.sessionId === sessionId && a.studentId === studentId);
+                let oldCoins = 0;
+                if (existingAtt) {
+                    if (existingAtt.status === 'KELDI') oldCoins = 5;
+                    else if (existingAtt.status === 'KECHIKDI') oldCoins = 3;
                 }
 
-                const coins = status === 'KELDI' ? 5 : status === 'KECHIKDI' ? 3 : 0;
-                const recId = crypto.randomUUID();
+                // Time logic
+                const now = new Date();
+                const timeStr = checkInTime || now.toTimeString().slice(0, 5);
+                let finalStatus = status;
 
-                db.attendance.push({
-                    id: recId, sessionId, studentId, timestamp: Date.now(), status, isJustified, note, coinsApplied: false
-                });
+                if (!finalStatus) { // If status is not explicitly provided (e.g., from FaceID or 'Vaqt bo'yicha aniqlash')
+                    const nowMin = Utils.timeToMin(timeStr);
+                    const startMin = Utils.timeToMin(session.startTime);
+                    const endMin = Utils.timeToMin(session.endTime);
 
-                if (coins > 0) {
-                    db.coin_ledger.push({ id: crypto.randomUUID(), attendanceId: recId, studentId, amount: coins, date: Date.now() });
+                    if (nowMin <= startMin) finalStatus = 'KELDI';
+                    else if (nowMin <= endMin) finalStatus = 'KECHIKDI';
+                    else finalStatus = 'KELMADI';
                 }
 
-                Actions.recalcPoints(studentId, db);
+                let newCoins = 0;
+                if (finalStatus === 'KELDI') newCoins = 5;
+                else if (finalStatus === 'KECHIKDI') newCoins = 3;
+
+                const diff = newCoins - oldCoins;
+
+                if (existingAtt) {
+                    existingAtt.status = finalStatus;
+                    existingAtt.isJustified = isJustified;
+                    existingAtt.note = note;
+                    existingAtt.checkInTime = timeStr;
+                    existingAtt.timestamp = Date.now();
+                } else {
+                    db.attendance_records.push({
+                        id: crypto.randomUUID(), sessionId, studentId, timestamp: Date.now(), status: finalStatus, isJustified, note, coinsApplied: false, checkInTime: timeStr
+                    });
+                }
+
+                if (diff !== 0) {
+                    db.coin_ledger.push({
+                        id: crypto.randomUUID(),
+                        studentId: studentId,
+                        amount: diff,
+                        date: Date.now(),
+                        type: 'ATTENDANCE_ADJUST',
+                        note: `Davomat tahriri (${session.date}): ${finalStatus}`
+                    });
+                    Actions.recalcPoints(studentId, db);
+                }
+
                 DB.save(db);
-                Actions.manualAttendance(); // re-render
-                TGBot.notifyAttendance(studentId, status, db, note ? `Sabab: ${note}` : '');
+                Actions.manualAttendance();
+                TGBot.notifyAttendance(studentId, finalStatus, db, note ? `🔔 Izoh: ${note}` : '');
             },
 
             recalcPoints(sid, db) {
@@ -1582,50 +1726,85 @@
                 if (s) s.totalPoints = db.coin_ledger.filter(c => c.studentId === sid).reduce((sum, c) => sum + c.amount, 0);
             },
 
-            endLesson(sessionId) {
-                const db = DB.get();
-                const session = db.sessions.find(x => x.id === sessionId);
-                const gMembers = db.group_members.filter(x => x.groupId === session.groupId).map(x => x.studentId);
-                const mems = db.students.filter(x => gMembers.includes(x.id) && x.status === 'active');
+            addBonus(sid) {
+                Swal.fire({
+                    title: 'Bonus Ball Qo\'shish',
+                    html: `
+                        <input id="bn-amount" type="number" class="form-control" placeholder="Ball miqdori (musbat)">
+                        <input id="bn-note" class="form-control" style="margin-top:1rem" placeholder="Sabab (ixtiyoriy)">
+                    `,
+                    showCancelButton: true
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        const amount = parseInt(document.getElementById('bn-amount').value);
+                        const note = document.getElementById('bn-note').value;
+                        if (!amount) return Swal.fire('Xato', 'Ball kiriting', 'error');
 
-                const unmarked = mems.filter(s => !db.attendance.find(a => a.sessionId === sessionId && a.studentId === s.id));
-                if (unmarked.length > 0) {
-                    return Swal.fire('Xato', `Barcha o'quvchilar belgilanmagan! Belgilanmaganlar: ${unmarked.map(s => s.name).join(', ')}`, 'error');
-                }
-
-                session.isClosed = true;
-
-                const kelmadiJust = db.attendance.filter(a => a.sessionId === sessionId && a.status === 'KELMADI' && a.isJustified);
-                kelmadiJust.forEach(a => {
-                    db.absences.push({ id: crypto.randomUUID(), studentId: a.studentId, date: session.date, status: 'OPEN' });
+                        const db = DB.get();
+                        db.coin_ledger.push({
+                            id: crypto.randomUUID(),
+                            studentId: sid,
+                            amount: amount,
+                            date: Date.now(),
+                            type: 'BONUS',
+                            note: note
+                        });
+                        Actions.recalcPoints(sid, db);
+                        DB.save(db);
+                        Actions.viewProfile(sid); // Refresh modal
+                    }
                 });
-
-                // Subtract balance from all present/late/noshow students ? Requirements only care about Coins right now. 
-                // But previously it subtracted db.settings.lessonCost. Let's do it for all members.
-                mems.forEach(s => {
-                    s.balance -= db.settings.lessonCost;
-                });
-
-                DB.save(db);
-                confetti();
-                Swal.fire('✅ Yakunlandi', 'Dars yopilgan deb belgilandi. Endi o\'zgartirib bo\'lmaydi.', 'success').then(() => Engine.navigate('attendance'));
             },
 
-            addPay(sid) {
-                Swal.fire({ title: 'To\'lov summasi', input: 'number', inputValue: 500000, showCancelButton: true }).then(r => {
-                    if (r.value) {
-                        const db = DB.get();
-                        const s = db.students.find(x => x.id === sid);
-                        s.balance += parseInt(r.value);
-                        db.transactions.push({ id: crypto.randomUUID(), studentId: sid, amount: parseInt(r.value), date: Date.now() });
+            editBonus(cid) {
+                const db = DB.get();
+                const c = db.coin_ledger.find(x => x.id === cid);
+                if (!c) return;
+
+                Swal.fire({
+                    title: 'Bonusni Tahrirlash',
+                    html: `
+                        <input id="ebn-amount" type="number" class="form-control" value="${c.amount}">
+                        <input id="ebn-note" class="form-control" style="margin-top:1rem" value="${c.note || ''}">
+                    `,
+                    showCancelButton: true
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        const amount = parseInt(document.getElementById('ebn-amount').value);
+                        const note = document.getElementById('ebn-note').value;
+                        if (amount === undefined || isNaN(amount)) return;
+
+                        c.amount = amount;
+                        c.note = note;
+                        Actions.recalcPoints(c.studentId, db);
                         DB.save(db);
-                        Engine.navigate('payments');
+                        Actions.viewProfile(c.studentId);
+                    }
+                });
+            },
+
+            deleteBonus(cid) {
+                Swal.fire({ title: 'O\'chirilsinmi?', text: 'Bonusni o\'chirmoqchisiz.', icon: 'warning', showCancelButton: true }).then(r => {
+                    if (r.isConfirmed) {
+                        const db = DB.get();
+                        const c = db.coin_ledger.find(x => x.id === cid);
+                        if (!c) return;
+                        const sid = c.studentId;
+                        db.coin_ledger = db.coin_ledger.filter(x => x.id !== cid);
+                        Actions.recalcPoints(sid, db);
+                        DB.save(db);
+                        Actions.viewProfile(sid);
                     }
                 });
             },
 
             // ---- BOSHADMIN: So'rovlarni tasdiqlash ----
             approveDelete(reqId) {
+                const db = DB.get();
+                const req = db.requests.find(x => x.id === reqId);
+                if (!req) return;
+                const studentIdToDelete = req.studentId;
+
                 Swal.fire({
                     title: '✅ Tasdiqlash',
                     text: 'O\'quvchi o\'chirilsinmi?',
@@ -1635,12 +1814,15 @@
                     cancelButtonText: 'Yo\'q'
                 }).then(r => {
                     if (!r.isConfirmed) return;
-                    const db = DB.get();
-                    const req = db.requests.find(x => x.id === reqId);
-                    if (!req) return;
-                    db.students = db.students.filter(x => x.id !== req.studentId);
-                    db.attendance = db.attendance.filter(x => x.studentId !== req.studentId);
-                    req.status = 'approved';
+
+                    db.students = db.students.filter(x => x.id !== studentIdToDelete);
+                    db.requests = db.requests.filter(x => x.studentId !== studentIdToDelete);
+                    db.attendance_records = db.attendance_records.filter(x => x.studentId !== studentIdToDelete);
+                    db.group_members = db.group_members.filter(x => x.studentId !== studentIdToDelete);
+                    db.coin_ledger = db.coin_ledger.filter(x => x.studentId !== studentIdToDelete);
+                    db.absences = db.absences.filter(x => x.studentId !== studentIdToDelete);
+                    db.freeze = db.freeze.filter(x => x.studentId !== studentIdToDelete);
+
                     DB.save(db);
                     Swal.fire('✅ O\'chirildi', 'O\'quvchi muvaffaqiyatli o\'chirildi.', 'success').then(() => Engine.navigate('requests'));
                 });
@@ -1651,14 +1833,6 @@
                 const req = db.requests.find(x => x.id === reqId);
                 if (req) { req.status = 'rejected'; DB.save(db); }
                 Swal.fire('❌ Rad etildi', 'O\'chirish so\'rovi rad etildi.', 'info').then(() => Engine.navigate('requests'));
-            },
-
-            saveSettings() {
-                const db = DB.get();
-                db.settings.monthlyLessons = parseInt(document.getElementById('set-lessons').value) || 12;
-                db.settings.lessonCost = parseInt(document.getElementById('set-cost').value) || 50000;
-                DB.save(db);
-                Swal.fire('✅ Saqlandi', 'Sozlamalar saqlandi.', 'success');
             },
 
             updatePass() {
@@ -1682,8 +1856,8 @@
                            <div><label>Tugash</label><input id="mg-end" type="time" class="form-control" value="${g.endTime || ''}"></div>
                         </div>
                         <div style="margin-top:1rem; display:flex; gap:1rem; justify-content:center;">
-                            <button onclick="Actions.freezeGroup('${gid}')" class="btn btn-ghost btn-sm">❄️ Guruhni muzlatish</button>
-                            <button onclick="Actions.deleteGroup('${gid}')" class="btn btn-danger btn-sm">🗑️ O'chirish</button>
+                            <button onclick="Actions.openFreezeModal()" class="btn btn-ghost btn-sm">❄️ O'quvchini muzlatish</button>
+                            <button onclick="Actions.deleteGroup('${gid}')" class="btn btn-danger btn-sm">🗑️ Guruhni o'chirish</button>
                         </div>`,
                     showCancelButton: true,
                     confirmButtonText: '💾 Saqlash',
@@ -1710,37 +1884,84 @@
                     if (r.isConfirmed) {
                         const db = DB.get();
                         db.groups = db.groups.filter(x => x.id !== gid);
+                        db.group_members = db.group_members.filter(x => x.groupId !== gid);
+                        db.sessions = db.sessions.filter(x => x.groupId !== gid);
+                        db.attendance_records = db.attendance_records.filter(x => x.sessionId !== gid);
+                        db.freeze = db.freeze.filter(x => x.groupId !== gid);
                         DB.save(db);
                         Engine.navigate('groups');
                     }
                 });
             },
 
-            freezeGroup(gid) {
-                Swal.close();
+            openFreezeModal() {
                 const db = DB.get();
-                db.students.filter(s => s.groupId === gid).forEach(s => s.status = 'frozen');
-                DB.save(db);
-                Swal.fire('❄️ Muzlatildi', 'Guruh o\'quvchilari muzlatildi.', 'success').then(() => Engine.navigate('groups'));
-            },
-
-            unfreeze(sid) {
-                const db = DB.get();
-                const s = db.students.find(x => x.id === sid);
-                if (s) { s.status = 'active'; DB.save(db); }
-                Engine.navigate('frozen');
-            },
-
-            addBonus(sid) {
-                Swal.fire({ title: '+ Bonus ball', input: 'number', inputValue: 10, inputAttributes: { min: 1, max: 100 }, showCancelButton: true }).then(r => {
-                    if (r.value) {
-                        const db = DB.get();
-                        const s = db.students.find(x => x.id === sid);
-                        s.totalPoints += parseInt(r.value);
-                        DB.save(db);
-                        Engine.navigate('rating');
+                Swal.fire({
+                    title: 'O\'quvchini Muzlatish',
+                    html: `
+                        <div style="text-align:left;">
+                            <label>O'quvchi</label>
+                            <select id="fr-sid" class="form-control" onchange="Actions.updateGroupsForFreeze()">
+                                <option value="">Tanlang...</option>
+                                ${db.students.filter(s => s.status === 'active').map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('')}
+                            </select>
+                            <label style="margin-top:1rem;">Guruh</label>
+                            <select id="fr-gid" class="form-control"><option value="">Avval o'quvchini tanlang</option></select>
+                            <label style="margin-top:1rem;">Muzlatish sanasi (dan)</label>
+                            <input id="fr-from" type="date" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                            <label style="margin-top:1rem;">Tugash sanasi (gacha, ixtiyoriy)</label>
+                            <input id="fr-to" type="date" class="form-control">
+                            <label style="margin-top:1rem;">Sabab</label>
+                            <input id="fr-note" class="form-control" placeholder="Masalan: Kasalxona">
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Muzlatish',
+                    preConfirm: () => {
+                        const sid = document.getElementById('fr-sid').value;
+                        const gid = document.getElementById('fr-gid').value;
+                        const from = document.getElementById('fr-from').value;
+                        if (!sid || !gid || !from) return Swal.showValidationMessage('O\'quvchi, guruh va sana majburiy!');
+                        return { sid, gid, from, to: document.getElementById('fr-to').value, note: document.getElementById('fr-note').value };
+                    }
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        const db2 = DB.get();
+                        if (!db2.freeze) db2.freeze = [];
+                        db2.freeze.push({
+                            id: crypto.randomUUID(),
+                            studentId: r.value.sid,
+                            groupId: r.value.gid,
+                            freezeFrom: r.value.from,
+                            freezeTo: r.value.to || null,
+                            note: r.value.note,
+                            status: 'FROZEN',
+                            createdAt: Date.now()
+                        });
+                        DB.save(db2);
+                        Swal.fire('✅ Muzlatildi', '', 'success').then(() => Engine.navigate('frozen'));
                     }
                 });
+            },
+
+            updateGroupsForFreeze() {
+                const sid = document.getElementById('fr-sid').value;
+                const db = DB.get();
+                const mGids = db.group_members.filter(m => m.studentId === sid).map(m => m.groupId);
+                const groups = db.groups.filter(g => mGids.includes(g.id));
+                const sel = document.getElementById('fr-gid');
+                sel.innerHTML = groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('') || '<option value="">Guruhlar yo\'q</option>';
+            },
+
+            unfreeze(fid) {
+                const db = DB.get();
+                const f = db.freeze.find(x => x.id === fid);
+                if (f) {
+                    f.status = 'UNFROZEN';
+                    f.freezeTo = new Date().toISOString().split('T')[0];
+                    DB.save(db);
+                }
+                Engine.navigate('frozen');
             },
 
             resetAllPoints() {
@@ -1748,6 +1969,7 @@
                     if (r.isConfirmed) {
                         const db = DB.get();
                         db.students.forEach(s => { s.totalPoints = 0; s.monthlyPoints = 0; });
+                        db.coin_ledger = [];
                         DB.save(db);
                         Engine.navigate('rating');
                     }
@@ -1790,17 +2012,19 @@
                 } catch (e) {
                     Swal.fire('❌ Ulanish xatosi', 'Internet aloqasini tekshiring.', 'error');
                 }
-            }
+            },
         };
 
-        // --- FACE ID CORE ENGINE (REBUILT FOR RELIABILITY) ---
+        // --- FACE ID CORE ENGINE (OPTIMIZED) ---
         const FaceID = {
-            stream: null,
             active: false,
-            mode: 'user', // default: front camera
+            stream: null,
+            mode: 'user',
             candidates: [],
             currentSessionId: null,
+            lastRecognized: {},
             lastCapturedBase64: null,
+            identifyTimeout: null,
 
             updateDiag(key, val, isBool = false) {
                 const el = document.getElementById(`diag-${key}`);
@@ -1821,50 +2045,51 @@
                 const g = db.groups.find(x => x.id === gid);
                 let session = db.sessions.find(x => x.groupId === gid && x.date === date);
                 if (!session) {
-                    session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start || '09:00', endTime: g.endTime || '23:59', isClosed: false };
+                    session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start, endTime: g.endTime, isClosed: false };
                     db.sessions.push(session);
                     DB.save(db);
                 }
                 if (session.isClosed && Engine.user.role !== 'BOSHADMIN') return Swal.fire('Taqiq', 'Bu dars yakunlangan!', 'warning');
-                
+
                 this.currentSessionId = session.id;
 
-                // 1) Diagnosis Basics
-                this.updateDiag('https', location.protocol === 'https:', true);
-                this.updateDiag('iframe', window.self !== window.top, true);
-                if (window.self !== window.top) document.getElementById('iframe-warn').style.display = 'block';
-
-                // 2) Candidates Logic
+                // Candidates Logic
                 const members = db.group_members.filter(m => m.groupId === gid);
                 const students = db.students.filter(s => members.some(m => m.studentId === s.id) && s.status === 'active');
-                
-                // User requirement: facePhoto != null and facePhoto != ""
-                // In our schema faceImg is the base64 photo
                 this.candidates = students.filter(s => s.faceImg && s.faceImg.length > 100);
                 this.updateDiag('candidates', this.candidates.length);
-                document.getElementById('chk-candidates').checked = this.candidates.length > 0;
+
+                if (this.candidates.length > 25) {
+                    Swal.fire({
+                        title: 'Guruh juda katta!',
+                        text: `Guruhda ${this.candidates.length} ta o'quvchi bor. FaceID sekinlashishi mumkin.`,
+                        icon: 'warning',
+                        confirmButtonText: 'Tushunarlidir'
+                    });
+                }
 
                 const noFaceList = document.getElementById('no-face-list');
                 if (this.candidates.length === 0) {
                     noFaceList.style.display = 'block';
                     const noFaceStudents = students.filter(s => !s.faceImg || s.faceImg.length < 100);
-                    document.getElementById('no-face-names').innerHTML = noFaceStudents.length > 0 ? 
-                        noFaceStudents.map(s => `• ${s.name} ${s.surname} (${s.studentCode || 'no code'}) <button onclick="FaceID.stop(); Actions.viewProfile('${s.id}')" class="btn btn-ghost btn-sm" style="padding:2px 5px; font-size:10px;">FaceID o‘tkazish</button>`).join('<br>') : 
+                    document.getElementById('no-face-names').innerHTML = noFaceStudents.length > 0 ?
+                        noFaceStudents.map(s => `• ${s.name} ${s.surname} (kod: ${s.studentCode || 'yo\'q'}) <button onclick="FaceID.stop(); Actions.viewProfile('${s.id}')" class="btn btn-ghost btn-sm" style="padding:2px 5px; font-size:10px;">Ro'yxatdan o'tkazish</button>`).join('<br>') :
                         'Guruhda o‘zi o‘quvchi yo‘q';
                 } else {
                     noFaceList.style.display = 'none';
                 }
 
-                // Show Scan View
+                // UI setup
                 document.getElementById('att-setup').style.display = 'none';
                 document.getElementById('att-scan').style.display = 'block';
                 document.getElementById('manual-fallback').style.display = 'none';
+                this.active = true;
                 this.updateDiag('cam', this.mode);
 
-                // 3) Camera Start with Fallbacks
+                // Non-blocking Camera Start
                 const vid = document.getElementById('att-video');
                 const statusEl = document.getElementById('att-status');
-                statusEl.innerHTML = '<span style="color:var(--primary)">Kamera ishga tushmoqda...</span>';
+                statusEl.innerHTML = '<span style="color:var(--primary)">Kamera kutilmoqda...</span>';
 
                 const constraints = [
                     { video: { facingMode: this.mode, width: { ideal: 1280 }, height: { ideal: 720 } } },
@@ -1872,166 +2097,131 @@
                     { video: true }
                 ];
 
-                let success = false;
-                for (let c of constraints) {
-                    try {
-                        console.log("Trying constraint:", c);
-                        this.stream = await navigator.mediaDevices.getUserMedia(c);
-                        vid.srcObject = this.stream;
-                        await vid.play();
-                        
-                        // Wait for videoWidth > 0
-                        const vw = await new Promise((resolve) => {
-                            let attempts = 0;
-                            const check = setInterval(() => {
-                                attempts++;
-                                if (vid.videoWidth > 0) { clearInterval(check); resolve(vid.videoWidth); }
-                                if (attempts > 25) { clearInterval(check); resolve(0); } // 2500ms fallback
-                            }, 100);
-                        });
+                (async () => {
+                    let success = false;
+                    for (let c of constraints) {
+                        if (!this.active) break;
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia(c);
+                            vid.srcObject = stream;
+                            this.stream = stream;
 
-                        if (vw > 0) {
-                            success = true;
-                            this.updateDiag('res', `${vid.videoWidth}x${vid.videoHeight}`);
-                            this.updateDiag('tracks', `${this.stream.getTracks().length} (${this.stream.getTracks()[0].readyState})`);
-                            document.getElementById('chk-video').checked = true;
-                            break;
-                        } else {
-                            // Stop track and try next fallback
-                            this.stream.getTracks().forEach(t => t.stop());
-                        }
-                    } catch (e) {
-                        console.warn("Constraint failed:", e);
-                        this.updateDiag('error', e.name + ': ' + e.message);
+                            const vw = await new Promise((resolve) => {
+                                let attempts = 0;
+                                const check = setInterval(() => {
+                                    attempts++;
+                                    if (vid.videoWidth > 0) { clearInterval(check); resolve(vid.videoWidth); }
+                                    if (attempts > 20) { clearInterval(check); resolve(0); }
+                                }, 100);
+                            });
+
+                            if (vw > 0) {
+                                success = true;
+                                await vid.play();
+                                statusEl.innerHTML = '<span style="color:var(--success)">Kamera tayyor.</span>';
+                                this.updateDiag('res', `${vid.videoWidth}x${vid.videoHeight}`);
+                                break;
+                            } else {
+                                stream.getTracks().forEach(t => t.stop());
+                            }
+                        } catch (e) { console.warn("Cam fail", e); }
                     }
-                }
+                    if (!success && this.active) {
+                        statusEl.innerHTML = '<span style="color:var(--danger)">Kamera yoqilmadi!</span>';
+                    }
+                })();
 
-                if (!success) {
-                    statusEl.innerHTML = '<span style="color:var(--danger)">Kamera yoqilmadi!</span>';
-                    return;
-                }
-
-                statusEl.innerHTML = '<span style="color:var(--success)">Kamera tayyor.</span>';
-                this.active = true;
-
-                // Update Camera Permission State
-                try {
-                    const perm = await navigator.permissions.query({ name: 'camera' });
-                    this.updateDiag('perm', perm.state);
-                    perm.onchange = () => this.updateDiag('perm', perm.state);
-                } catch(e) { this.updateDiag('perm', 'unknown'); }
-
-                // Load AI if needed
-                if (!Engine.faceModelsLoaded) {
-                    statusEl.innerHTML = '<span style="color:var(--warning)">AI yuklanmoqda...</span>';
-                    await Engine.loadFaceModels();
-                    statusEl.innerHTML = '<span style="color:var(--success)">Kamera tayyor. AI Faol.</span>';
-                }
+                this.updateDiag('https', location.protocol === 'https:', true);
+                this.updateDiag('iframe', window.self !== window.top, true);
             },
 
             async identify() {
                 if (!this.active || !this.stream) return;
-                
                 const btn = document.getElementById('btn-identify');
                 const statusEl = document.getElementById('att-status');
                 const nameEl = document.getElementById('att-name');
                 const vid = document.getElementById('att-video');
 
+                if (btn.disabled) return;
                 btn.disabled = true;
-                statusEl.innerHTML = '<span style="color:var(--primary)">O‘quvchi aniqlanmoqda...</span>';
-                nameEl.innerText = '';
+                statusEl.innerHTML = '<span style="color:var(--primary)">Yuz tekshirilmoqda...</span>';
                 this.updateDiag('last-req', new Date().toLocaleTimeString());
-                document.getElementById('manual-fallback').style.display = 'none';
+
+                if (this.identifyTimeout) clearTimeout(this.identifyTimeout);
+                this.identifyTimeout = setTimeout(() => {
+                    if (btn.disabled) {
+                        statusEl.innerHTML = '<span style="color:var(--danger)">Juda sekin ishlayapti, qayta urinib ko\'ring</span>';
+                        btn.disabled = false;
+                    }
+                }, 8000);
 
                 try {
-                    // Capture Frame
+                    const targetWidth = 480;
+                    const scale = targetWidth / vid.videoWidth;
                     const canvas = document.createElement('canvas');
-                    canvas.width = vid.videoWidth;
-                    canvas.height = vid.videoHeight;
+                    canvas.width = targetWidth;
+                    canvas.height = vid.videoHeight * scale;
                     const ctx = canvas.getContext('2d');
-                    // Mirror flip if using front camera
-                    if (this.mode === 'user') {
-                        ctx.translate(canvas.width, 0);
-                        ctx.scale(-1, 1);
-                    }
-                    ctx.drawImage(vid, 0, 0);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.85);
+                    if (this.mode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+                    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+
+                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
                     this.lastCapturedBase64 = base64;
 
-                    // 4) FACE DETECTION GATE
-                    const detection = await faceapi.detectSingleFace(vid, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }));
+                    const detection = await faceapi.detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }));
                     if (!detection) {
-                        statusEl.innerHTML = '<span style="color:var(--danger)">YUZ TOPILMADI. Iltimos kameraga to‘g‘ri qarang.</span>';
-                        document.getElementById('chk-no-face').checked = true;
+                        statusEl.innerHTML = '<span style="color:var(--danger)">YUZ ANIQLANMADI. Kameraga yaxshilab qarang.</span>';
+                        clearTimeout(this.identifyTimeout);
                         btn.disabled = false;
                         return;
                     }
-                    document.getElementById('chk-no-face').checked = false; // Reset if found
-                    document.getElementById('chk-identify').checked = true;
 
-                    // 5) IDENTIFY REQUEST PAYLOAD
-                    const payload = {
-                        targetImageBase64: base64,
-                        candidates: this.candidates.map(s => ({
-                            studentId: s.id,
-                            facePhotoBase64: s.faceImg
-                        }))
-                    };
-
-                    this.updateDiag('last-res', 'Sending identify request...');
-
-                    // We use the LOCAL face-api logic as the "backend" but structured for the requirement
-                    // If a real webhook exists, we'd fetch(URL, {body: JSON.stringify(payload)})
+                    const payload = { targetImageBase64: base64, candidates: this.candidates.map(s => ({ studentId: s.id, facePhotoBase64: s.faceImg })) };
+                    this.updateDiag('last-res', 'Skanerlash...');
                     const result = await this.mockIdentifyRequest(payload);
-                    this.updateDiag('last-res', JSON.stringify(result, null, 2));
+                    this.updateDiag('last-res', JSON.stringify(result));
+
+                    clearTimeout(this.identifyTimeout);
 
                     if (result.match && result.studentId) {
+                        const lastTime = this.lastRecognized[result.studentId] || 0;
+                        if (Date.now() - lastTime < 10000) {
+                            statusEl.innerHTML = '<span style="color:var(--warning)">Cooldown: Biroz kuting...</span>';
+                            btn.disabled = false;
+                            return;
+                        }
                         const student = this.candidates.find(s => s.id === result.studentId);
                         if (student) {
+                            this.lastRecognized[student.id] = Date.now();
                             this.processMatch(student);
-                        } else {
-                            this.processUnknown();
-                        }
-                    } else {
-                        this.processUnknown();
-                    }
+                        } else { this.processUnknown(); }
+                    } else { this.processUnknown(); }
                 } catch (e) {
                     console.error(e);
-                    this.updateDiag('error', e.name + ': ' + e.message);
-                    this.updateDiag('last-res', 'ERROR: ' + e.message);
+                    clearTimeout(this.identifyTimeout);
+                    this.updateDiag('error', e.message);
                     this.showManualFallback();
                 }
-
                 btn.disabled = false;
             },
 
-            // Mocking the behavior of a remote Identify API using local face-api
             async mockIdentifyRequest(payload) {
-                // Simulate network latency
                 await new Promise(r => setTimeout(r, 600));
-
                 const vid = document.getElementById('att-video');
                 const fullDet = await faceapi.detectSingleFace(vid).withFaceLandmarks().withFaceDescriptor();
-                
-                if (!fullDet) return { match: false, status: 'UNKNOWN', error: 'Face lost during processing' };
+                if (!fullDet) return { match: false, status: 'UNKNOWN' };
 
                 let bestMatch = null;
-                let minDistance = 0.6; // Threshold
-
+                let minDistance = 0.6;
                 for (let s of this.candidates) {
                     if (!s.faceData) continue;
                     const distance = faceapi.euclideanDistance(fullDet.descriptor, new Float32Array(s.faceData));
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        bestMatch = s;
-                    }
+                    if (distance < minDistance) { minDistance = distance; bestMatch = s; }
                 }
-
                 if (bestMatch && minDistance < 0.55) {
                     return { match: true, studentId: bestMatch.id, confidence: (1 - minDistance).toFixed(2) };
-                } else {
-                    return { match: false, status: 'UNKNOWN' };
                 }
+                return { match: false, status: 'UNKNOWN' };
             },
 
             processMatch(student) {
@@ -2039,40 +2229,49 @@
                 const nameEl = document.getElementById('att-name');
                 const db = DB.get();
                 const session = db.sessions.find(s => s.id === this.currentSessionId);
-
-                // 6) STATUS DECISION LOGIC
-                // Rules: now <= start => KELDI; start < now <= end => KECHIKDI; now > end => KELMADI
+                // Time logic
                 const now = new Date();
-                const nowTimeStr = now.toTimeString().slice(0, 5); // "HH:MM" format
-                
-                let status = 'KELDI';
-                if (nowTimeStr > session.endTime) status = 'KELMADI';
-                else if (nowTimeStr > session.startTime) status = 'KECHIKDI';
+                const nowStr = now.toISOString().split('T')[0];
+                const nowTimeStr = now.toTimeString().slice(0, 5);
+                const nowMin = Utils.timeToMin(nowTimeStr);
+                const startMin = Utils.timeToMin(session.startTime);
+                const endMin = Utils.timeToMin(session.endTime);
 
-                this.updateDiag('last-decision', status);
-                document.getElementById('chk-match').checked = true;
+                if (!session.startTime || !session.endTime) {
+                    statusEl.innerHTML = '<span style="color:var(--danger)">Session vaqtini tekshiring!</span>';
+                    return;
+                }
 
-                const existing = db.attendance.find(a => a.sessionId === session.id && a.studentId === student.id);
+                // Check Freeze
+                const freeze = (db.freeze || []).find(f => f.studentId === student.id && f.groupId === session.groupId && f.status === 'FROZEN' && nowStr >= f.freezeFrom && (!f.freezeTo || nowStr <= f.freezeTo));
+                if (freeze) {
+                    statusEl.innerHTML = `<span style="color:var(--warning)">MUZLATILGAN: ${student.name}</span>`;
+                    nameEl.innerText = student.name + ' ' + student.surname;
+                    return;
+                }
+
+                let finalStatus = 'KELDI';
+                if (nowMin > endMin) finalStatus = 'KELMADI';
+                else if (nowMin > startMin) finalStatus = 'KECHIKDI';
+
+                this.updateDiag('last-decision', finalStatus);
+
+                const existing = db.attendance_records.find(a => a.sessionId === session.id && a.studentId === student.id);
                 if (existing) {
                     statusEl.innerHTML = `<span style="color:var(--warning)">${student.name} avval belgilangan!</span>`;
                     nameEl.innerText = student.name + ' ' + student.surname;
                     return;
                 }
 
-                statusEl.innerHTML = `<span style="color:var(--success)">✅ TANILDI: ${status}</span>`;
+                statusEl.innerHTML = `<span style="color:var(--success)">✅ TANILDI: ${finalStatus}</span>`;
                 nameEl.innerText = student.name + ' ' + student.surname;
-
-                // 7) SAVE ATTENDANCE
-                Actions.saveMark(session.id, student.id, status, true, 'FaceID');
-                document.getElementById('chk-saved').checked = true;
+                Actions.saveMark(session.id, student.id, finalStatus, true, 'FaceID');
                 confetti({ particleCount: 50, spread: 80, origin: { y: 0.7 } });
             },
 
             processUnknown() {
-                const statusEl = document.getElementById('att-status');
-                statusEl.innerHTML = '<span style="color:var(--danger)">Tanimadim (UNKNOWN)</span>';
-                this.updateDiag('last-decision', 'UNKNOWN');
-                document.getElementById('chk-unknown').checked = true;
+                document.getElementById('att-status').innerHTML = '<span style="color:var(--danger)">Tanimadim</span>';
+                this.updateDiag('last-decision', 'NOMA\'LUM');
                 this.showManualFallback();
             },
 
@@ -2083,8 +2282,8 @@
                 const session = db.sessions.find(s => s.id === this.currentSessionId);
                 const members = db.group_members.filter(m => m.groupId === session.groupId);
                 const students = db.students.filter(s => members.some(m => m.studentId === s.id) && s.status === 'active');
-                
-                sel.innerHTML = '<option value="">O‘quvchini tanlang...</option>' + 
+
+                sel.innerHTML = '<option value="">O‘quvchini tanlang...</option>' +
                     students.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
                 zone.style.display = 'block';
             },
@@ -2099,48 +2298,44 @@
 
             toggleCam() {
                 this.mode = this.mode === 'user' ? 'environment' : 'user';
-                this.stop();
+                this.stop(false);
                 this.start();
             },
 
-            stop() {
+            stop(showSetup = true) {
                 this.active = false;
                 if (this.stream) {
                     this.stream.getTracks().forEach(t => t.stop());
                     this.stream = null;
                 }
-                const scan = document.getElementById('att-scan');
-                const setup = document.getElementById('att-setup');
-                if (scan) scan.style.display = 'none';
-                if (setup) setup.style.display = 'block';
+                if (showSetup) {
+                    document.getElementById('att-scan').style.display = 'none';
+                    document.getElementById('att-setup').style.display = 'block';
+                }
                 document.getElementById('iframe-warn').style.display = 'none';
             },
 
             async enroll(sid) {
                 if (!Engine.faceModelsLoaded) {
                     Swal.fire({ title: '🤖 AI yuklanmoqda...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-                    try {
-                        await Engine.loadFaceModels();
-                        Swal.close();
-                    } catch (e) {
-                        return Swal.fire('Xato', 'Face AI yuklanmadi', 'error');
-                    }
+                    try { await Engine.loadFaceModels(); Swal.close(); }
+                    catch (e) { return Swal.fire('Xato', 'Face AI yuklanmadi', 'error'); }
                 }
 
                 let curFacing = 'user';
                 let enStream = null;
-                let enrollActive = true;
-                let enDescriptors = []; 
-                let lastDetImg = null;
 
                 const startCam = async (mode) => {
                     const v = document.getElementById('en-vid');
+                    const scanBtn = Swal.getConfirmButton();
+                    if (scanBtn) scanBtn.disabled = true;
                     if (enStream) enStream.getTracks().forEach(t => t.stop());
                     try {
-                        enStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode, width: { ideal: 1280 } } });
+                        enStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode, width: { ideal: 640 } } });
                         v.srcObject = enStream;
                         await v.play();
-                    } catch (e) { Swal.showValidationMessage('Kameraga ulanib bo\'lmadi'); }
+                        if (scanBtn) scanBtn.disabled = false;
+                    } catch (e) { Swal.showValidationMessage('Kamera xatosi'); }
                 };
 
                 const { value: ok, isConfirmed } = await Swal.fire({
@@ -2152,9 +2347,8 @@
                             <div class="face-oval"></div>
                             <button type="button" id="cam-switch" class="btn btn-ghost" style="position:absolute; bottom:1rem; right:1rem; padding:0.5rem; z-index:1000;"><i data-lucide="refresh-cw"></i></button>
                         </div>
-                        <p id="en-status" style="margin-top:1rem; font-size:1.1rem; font-weight:bold; color:var(--warning);">Yuz kutilmoqda...</p>
-                        <p style="color:var(--text-dim); font-size:0.9rem; margin-top:0.5rem;">Sifatli tanish uchun boshingizni biroz harakatlantiring</p>`,
-                    confirmButtonText: '✅ Saqlash (Tasdiqlash)',
+                        <p id="en-status" style="margin-top:1rem; font-size:1.1rem; font-weight:bold; color:var(--warning);">Kamera kutilmoqda...</p>`,
+                    confirmButtonText: '📸 Skanerlash va Saqlash',
                     showCancelButton: true,
                     cancelButtonText: 'Bekor',
                     didOpen: () => {
@@ -2164,70 +2358,32 @@
                             startCam(curFacing);
                         };
                         startCam(curFacing);
-
-                        const v = document.getElementById('en-vid');
-                        const st = document.getElementById('en-status');
-
-                        const loop = async () => {
-                            if (!enrollActive) return;
-                            try {
-                                if (v.videoWidth && !v.paused && enDescriptors.length < 5) {
-                                    const vInfo = await faceapi.detectSingleFace(v).withFaceLandmarks().withFaceDescriptor();
-                                    if (vInfo) {
-                                        enDescriptors.push(vInfo.descriptor);
-                                        if(!lastDetImg) {
-                                            const canvas = document.createElement('canvas');
-                                            canvas.width = v.videoWidth; canvas.height = v.videoHeight;
-                                            canvas.getContext('2d').drawImage(v, 0, 0);
-                                            const faces = await faceapi.extractFaces(canvas, [vInfo.detection.box]);
-                                            lastDetImg = faces[0]?.toDataURL();
-                                        }
-
-                                        if (enDescriptors.length >= 5) {
-                                            st.innerHTML = `✅ Tayyor! (5/5)<br><small style="color:var(--text-dim)">"Saqlash" ni bosing</small>`;
-                                            st.style.color = 'var(--success)';
-                                        } else {
-                                            st.innerHTML = `🧬 Skanerlanmoqda... (${enDescriptors.length}/5)`;
-                                        }
-                                    } else {
-                                        st.innerHTML = `📸 Yuz kutilmoqda...`;
-                                        st.style.color = 'var(--warning)';
-                                    }
-                                }
-                            } catch (e) { }
-                            if (enrollActive) setTimeout(loop, 100);
-                        };
-                        v.addEventListener('playing', loop, { once: true });
                     },
-                    willClose: () => {
-                        enrollActive = false;
-                        if (enStream) enStream.getTracks().forEach(t => t.stop());
-                    },
+                    willClose: () => { if (enStream) enStream.getTracks().forEach(t => t.stop()); },
                     preConfirm: async () => {
-                        if (enDescriptors.length < 5) {
-                            Swal.showValidationMessage('❌ Skanerlash yakunlanmadi!');
-                            return false;
-                        }
-                        let meanDesc = new Float32Array(128);
-                        for (let i = 0; i < 128; i++) {
-                            let sum = 0;
-                            for (let d = 0; d < enDescriptors.length; d++) { sum += enDescriptors[d][i]; }
-                            meanDesc[i] = sum / enDescriptors.length;
-                        }
-                        return { data: Array.from(meanDesc), img: lastDetImg };
+                        const v = document.getElementById('en-vid');
+                        document.getElementById('en-status').innerHTML = '🧬 Qayta ishlash...';
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = 480; canvas.height = v.videoHeight * (480 / v.videoWidth);
+                            canvas.getContext('2d').drawImage(v, 0, 0, canvas.width, canvas.height);
+                            const vInfo = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                            if (!vInfo) { Swal.showValidationMessage('Yuz aniqlanmadi'); return false; }
+                            const faces = await faceapi.extractFaces(canvas, [vInfo.detection.box]);
+                            return { descriptor: Array.from(vInfo.descriptor), img: faces[0]?.toDataURL('image/jpeg', 0.8) };
+                        } catch (e) { Swal.showValidationMessage('Xato: ' + e.message); return false; }
                     }
                 });
-
-                if (enStream) enStream.getTracks().forEach(t => t.stop());
 
                 if (isConfirmed && ok) {
                     const db = DB.get();
                     const s = db.students.find(x => x.id === sid);
                     if (s) {
-                        s.faceData = ok.data;
+                        s.faceData = ok.descriptor;
                         s.faceImg = ok.img;
                         DB.save(db);
-                        Swal.fire('✅ Muvaffaqiyatli', 'FaceID saqlandi!', 'success').then(() => Engine.navigate('students'));
+                        Swal.fire('✅ Saqlandi', '', 'success');
+                        Engine.navigate('students');
                     }
                 }
             }
