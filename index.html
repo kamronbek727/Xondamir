@@ -490,6 +490,126 @@
             height: 20px;
             accent-color: var(--primary);
         }
+
+        /* New Attendance Styles */
+        .att-tabs {
+            display: flex;
+            background: var(--surface);
+            padding: 0.4rem;
+            border-radius: 1.2rem;
+            margin-bottom: 1.5rem;
+            gap: 0.4rem;
+        }
+
+        .att-tab-btn {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 0.8rem;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .att-tab-btn.active {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .student-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .student-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 1.2rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .student-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .student-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .student-code {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .att-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .btn-att {
+            padding: 0.8rem 0.4rem;
+            border-radius: 0.8rem;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+        }
+
+        .btn-att.active-keldi {
+            background: var(--success);
+            color: #fff;
+            border-color: var(--success);
+        }
+
+        .btn-att.active-kechikdi {
+            background: var(--warning);
+            color: #fff;
+            border-color: var(--warning);
+        }
+
+        .btn-att.active-kelmadi {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+
+        .btn-att:active {
+            transform: scale(0.95);
+        }
+
+        .session-info-bar {
+            background: rgba(251, 191, 36, 0.05);
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            padding: 0.8rem 1rem;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 
@@ -557,9 +677,30 @@
         // --- UTILS ---
         const Utils = {
             timeToMin(timeStr) {
-                if (!timeStr) return 0;
-                const [h, m] = timeStr.split(':').map(Number);
+                if (!timeStr || typeof timeStr !== 'string') return 0;
+                const parts = timeStr.split(':').map(Number);
+                const h = isNaN(parts[0]) ? 0 : parts[0];
+                const m = isNaN(parts[1]) ? 0 : parts[1];
                 return (h * 60) + m;
+            },
+            getAttStatus(nowTime, startTime, endTime) {
+                let n = this.timeToMin(nowTime);
+                let s = this.timeToMin(startTime || '00:00');
+                let e = this.timeToMin(endTime || '23:59');
+
+                if (e === 0) e = 1439;
+
+                // Handle cross-day scenario (e.g., 23:00 to 01:00)
+                if (e <= s && s > 0) {
+                    if (n < s && n < 300) n += 1440; // current time is past midnight
+                    e += 1440;
+                } else if (n < s && s > 1000 && n < 300) {
+                    n += 1440;
+                }
+
+                if (n <= s) return 'KELDI';
+                if (n <= e) return 'KECHIKDI';
+                return 'KELMADI';
             }
         };
 
@@ -760,18 +901,21 @@
                     body: JSON.stringify(body)
                 });
             },
-            async notifyAttendance(studentId, status, db, extraText = '') {
+            async notifyAttendance(studentId, sessionId, db, reasonText = 'Manual') {
                 const s = db.students.find(x => x.id === studentId);
-                if (!s || !s.tgChatIds || s.tgChatIds.length === 0) return;
+                const att = db.attendance_records.find(a => a.sessionId === sessionId && a.studentId === studentId);
+                if (!s || !att || !s.tgChatIds || s.tgChatIds.length === 0) return;
 
-                const pts = status === 'KELDI' ? 5 : status === 'KECHIKDI' ? 3 : 0;
-                let text = `♟️ <b>DAVOMAT</b>\n👤 O'quvchi: ${s.name} ${s.surname}\n`;
-                if (status === 'KELMADI') {
-                    text += `📍 Holat: <b>KELMADI</b>\n🏆 Coin: +0\n${extraText}`;
-                } else {
-                    const tStr = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-                    text += `⏰ Vaqt: ${tStr}\n📍 Holat: <b>${status === 'KECHIKDI' ? 'kechikib keldi' : 'keldi'}</b>\n🏆 Coin: +${pts}\n${extraText}`;
-                }
+                const status = att.status;
+                const coins = status === 'KELDI' ? 5 : status === 'KECHIKDI' ? 3 : 0;
+                const timeStr = att.checkInTime || new Date().toTimeString().slice(0, 5);
+
+                let text = `♟️ <b>DAVOMAT</b>\n\n`;
+                text += `👤 O'quvchi: <b>${s.name} ${s.surname}</b>\n`;
+                text += `📍 Holat: <b>${status}</b>\n`;
+                text += `🏆 Coin: <b>+${coins}</b>\n`;
+                text += `📝 Sabab: ${reasonText}\n`;
+                text += `⏰ Vaqt: ${timeStr}`;
 
                 for (let cid of s.tgChatIds) {
                     await this.send(cid, text);
@@ -816,8 +960,9 @@
                 if (this.faceModelsLoading) return false;
                 this.faceModelsLoading = true;
 
-                // face-api.js kutubxonasini dinamik yuklash
+                // face-api.js
                 await new Promise((resolve, reject) => {
+                    if (window.faceapi) resolve();
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js';
                     s.onload = resolve;
@@ -827,7 +972,7 @@
 
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
                 await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
@@ -970,98 +1115,106 @@
             },
 
             attendance(t, db) {
-                // history ni tuzish
-                const recentSessions = [...db.sessions].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 50); // Just order by id to sort roughly by creation, ideally by timestamp
+                const gid = localStorage.getItem('last_att_gid') || (db.groups[0] ? db.groups[0].id : '');
+                const date = new Date().toISOString().split('T')[0];
 
                 t.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
-                        <h2>Davomat Olish</h2>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h2 style="font-size:1.5rem;">Davomat</h2>
                     </div>
-                    <div class="card" id="att-app" style="text-align:center;">
-                        <div id="att-setup">
-                            <i data-lucide="scan-face" style="width:64px; height:64px; color:var(--primary); margin-bottom:1rem;"></i>
-                            <h3>Yangi Davomat</h3>
-                            <div style="text-align:left; margin-top:1.5rem;">
-                                <label>Guruhni tanlang</label>
-                                <select id="att-gid" class="form-control">${db.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}</select>
-                                <label style="margin-top:1rem; display:block">Sana</label>
-                                <input type="date" id="att-date" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+
+                    <div class="card" style="padding: 1rem; margin-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <div>
+                                <label style="margin-top:0">Guruh</label>
+                                <select id="att-gid" class="form-control" onchange="Actions.refreshAttendanceView()">
+                                    <option value="">Tanlang...</option>
+                                    ${db.groups.map(g => `<option value="${g.id}" ${g.id === gid ? 'selected' : ''}>${g.name}</option>`).join('')}
+                                </select>
                             </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:2rem;">
-                                <button onclick="FaceID.start()" class="btn btn-primary" style="justify-content:center;"><i data-lucide="camera"></i> FaceID</button>
-                                <button onclick="Actions.manualAttendance()" class="btn btn-ghost" style="justify-content:center; border:1px solid var(--border)"><i data-lucide="list"></i> Qo'lda olish</button>
+                            <div>
+                                <label style="margin-top:0">Sana</label>
+                                <input type="date" id="att-date" class="form-control" value="${date}" onchange="Actions.refreshAttendanceView()">
                             </div>
                         </div>
-                        <div id="att-scan" style="display:none;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                                <h3 id="att-status" style="margin:0;">Kamera tayyorlanmoqda...</h3>
-                                <div style="display:flex; gap:0.5rem">
-                                    <button onclick="FaceID.toggleCam()" class="btn btn-ghost btn-sm"><i data-lucide="refresh-cw"></i></button>
-                                    <button onclick="FaceID.stop()" class="btn btn-danger btn-sm"><i data-lucide="x"></i></button>
-                                </div>
-                            </div>
+                    </div>
 
+                    <div id="session-info-container"></div>
+
+                    <div class="att-tabs">
+                        <button class="att-tab-btn active" id="tab-manual" onclick="Actions.switchAttTab('manual')">
+                            <i data-lucide="hand"></i> Qo'lda
+                        </button>
+                        <button class="att-tab-btn" id="tab-faceid" onclick="Actions.switchAttTab('faceid')">
+                            <i data-lucide="scan-face"></i> FaceID
+                        </button>
+                    </div>
+
+                    <div id="manual-content" class="tab-pane animate-in">
+                        <div id="att-setup" style="display:none;"></div> <!-- FaceID compatibility -->
+                        <div id="student-list" class="student-list">
+                            <div style="text-align:center; padding:2rem;"><div class="spinner" style="margin:0 auto; width:30px; height:30px;"></div></div>
+                        </div>
+                        
+                        <div style="margin-top:2rem; padding-bottom:2rem;">
+                             <button onclick="Actions.finishSession()" class="btn btn-primary" style="width:100%; height:60px; font-size:1.2rem; box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);">
+                                <i data-lucide="check-circle-2"></i> Dars tugadi
+                             </button>
+                        </div>
+                    </div>
+
+                    <div id="faceid-content" class="tab-pane animate-in" style="display:none;">
+                        <div id="att-app" style="text-align:center;">
                             <!-- Iframe Warning -->
                             <div id="iframe-warn" style="display:none; background:rgba(239, 68, 68, 0.2); color:var(--danger); padding:1rem; border-radius:1rem; margin-bottom:1rem; text-align:left;">
                                 <div style="display:flex; align-items:center; gap:0.5rem; font-weight:bold;">
                                     <i data-lucide="alert-triangle"></i> Iframe ichida kamera ishlamasligi mumkin
                                 </div>
-                                <button onclick="window.open(location.href, '_blank')" class="btn btn-primary btn-sm" style="margin-top:0.5rem; width:100%; justify-content:center;">Yangi tabda ochish (Open in new tab)</button>
+                                <button onclick="window.open(location.href, '_blank')" class="btn btn-primary btn-sm" style="margin-top:0.5rem; width:100%; justify-content:center;">Yangi tabda ochish</button>
                             </div>
 
-                            <div class="face-camera-wrap" style="position:relative;">
-                                <video id="att-video" autoplay muted playsinline></video>
-                                <div class="face-oval"></div>
-                            </div>
+                            <div id="att-scan" style="display:none;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                    <h3 id="att-status" style="margin:0; font-size:1.1rem; font-weight:bold;">Kamera kutilmoqda...</h3>
+                                    <div style="display:flex; gap:0.5rem">
+                                        <button onclick="FaceID.toggleCam()" class="btn btn-ghost btn-sm" title="Kamerani almashtirish"><i data-lucide="refresh-cw"></i></button>
+                                        <button onclick="FaceID.stop()" class="btn btn-danger btn-sm" title="Yopish"><i data-lucide="x"></i></button>
+                                    </div>
+                                </div>
+                                <div class="face-camera-wrap" style="position:relative; height:65vh; border:2px solid var(--primary); background:#000;">
+                                    <video id="att-video" autoplay muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                                    <div class="face-oval" style="border: 3px dashed var(--primary); opacity: 0.6;"></div>
+                                </div>
+                                <div style="margin-top: 1rem; background: var(--surface); padding: 1rem; border-radius: 1rem;">
+                                    <h2 id="att-name" style="color:var(--primary); min-height:35px; font-size:1.6rem; margin:0; margin-bottom:1rem;"></h2>
+                                    <button id="btn-identify" onclick="FaceID.identify()" class="btn btn-primary" style="width:100%; height:60px; font-size:1.2rem; gap:0.5rem; box-shadow: 0 10px 30px rgba(110, 231, 183, 0.2);">
+                                        <i data-lucide="scan-face"></i> SKANERLASH
+                                    </button>
+                                </div>
+                                
+                                <div id="manual-fallback" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:1rem; text-align:left;">
+                                    <label style="font-size:0.85rem; color:var(--primary)">Qo'lda tanlash:</label>
+                                    <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+                                        <select id="manual-student-select" class="form-control" style="margin-top:0; border-color:var(--primary)"></select>
+                                        <button onclick="FaceID.confirmManual()" class="btn btn-primary btn-sm">TASDIQLASH</button>
+                                    </div>
+                                </div>
 
-                            <h2 id="att-name" style="margin-top:1.5rem; color:var(--primary); min-height:40px;"></h2>
-                            <button id="btn-identify" onclick="FaceID.identify()" class="btn btn-primary" style="margin-top:0.5rem; width:100%; justify-content:center; padding:1.2rem; font-size:1.1rem; gap:0.5rem;"><i data-lucide="scan-face"></i> Yuzni Skanerlash</button>
-                            
-
-
-                            <!-- Manual Fallback Dropdown -->
-                            <div id="manual-fallback" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:1rem; text-align:left;">
-                                <label style="font-size:0.85rem; color:var(--primary)">Qo'lda tanlash:</label>
-                                <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-                                    <select id="manual-student-select" class="form-control" style="margin-top:0; border-color:var(--primary)"></select>
-                                    <button onclick="FaceID.confirmManual()" class="btn btn-primary btn-sm">TASDIQLASH</button>
+                                <!-- Diag Panel (Optional but FaceID uses it) -->
+                                <div id="no-face-list" class="card" style="display:none; margin-top:1rem; border-color:var(--danger);">
+                                    <h3 style="color:var(--danger); font-size:1rem;">FaceID ro‘yxatdan o‘tgan o‘quvchi yo‘q</h3>
+                                    <div id="no-face-names" style="margin-top:1rem; font-size:0.85rem; text-align:left; color:var(--text-dim);"></div>
                                 </div>
                             </div>
-
-                            <button onclick="FaceID.stop(); Actions.manualAttendance()" class="btn btn-ghost" style="margin-top:1.5rem; width:100%; justify-content:center;">Orqaga qaytish / Qo'lda belgilash</button>
                         </div>
                     </div>
-                    
-
-                    <!-- No Face Results (Hidden list for groups with no faces) -->
-                    <div id="no-face-list" class="card" style="display:none; margin-top:1rem; border-color:var(--danger);">
-                        <h3 style="color:var(--danger); font-size:1rem;">FaceID ro‘yxatdan o‘tgan o‘quvchi yo‘q</h3>
-                        <div id="no-face-names" style="margin-top:1rem; font-size:0.85rem; text-align:left; color:var(--text-dim);"></div>
-                    </div>
-                    
-                    <h3 style="margin-top:3rem; margin-bottom:1rem;">Tarix (Sessiyalar)</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead><tr><th>Sana</th><th>Guruh</th><th>Holat</th><th>Amal</th></tr></thead>
-                            <tbody>
-                                ${recentSessions.map(sess => {
-                    const g = db.groups.find(x => x.id === sess.groupId) || { name: 'Noma\'lum' };
-                    const count = db.attendance_records.filter(a => a.sessionId === sess.id).length;
-                    return `
-                                        <tr>
-                                            <td data-label="Sana">${sess.date}</td>
-                                            <td data-label="Guruh">${g.name} (${sess.startTime}-${sess.endTime})</td>
-                                            <td data-label="Holat">${sess.isClosed ? '<span class="badge badge-success">YOPILGAN</span>' : '<span class="badge badge-warning">OCHIQ</span>'} <br><small>${count} ta belgilandi</small></td>
-                                            <td data-label="Amal">
-                                                <button onclick="document.getElementById('att-gid').value='${sess.groupId}'; document.getElementById('att-date').value='${sess.date}'; Actions.manualAttendance(); document.getElementById('att-setup').scrollIntoView();" class="btn btn-ghost btn-sm">Ko'rish / Tahrirlash</button>
-                                            </td>
-                                        </tr>
-                                    `;
-                }).join('') || '<tr><td colspan="4" style="text-align:center;">Sessiyalar yo\'q</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
                 `;
+
+                // Set interval to wait for elements to exist then refresh
+                setTimeout(() => {
+                    Actions.refreshAttendanceView();
+                    lucide.createIcons();
+                }, 50);
             },
 
             absent(t, db) {
@@ -1539,169 +1692,184 @@
                 });
             },
 
-            manualAttendance() {
+            refreshAttendanceView() {
                 const gid = document.getElementById('att-gid').value;
                 const date = document.getElementById('att-date').value;
-                if (!gid || !date) return Swal.fire('Xato', 'Guruh va sanani tanlang', 'error');
+                if (!gid || !date) return;
+
+                localStorage.setItem('last_att_gid', gid);
 
                 const db = DB.get();
                 const g = db.groups.find(x => x.id === gid);
+                if (!g) return;
+
                 let session = db.sessions.find(x => x.groupId === gid && x.date === date);
                 if (!session) {
                     session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start, endTime: g.endTime, isClosed: false };
                     db.sessions.push(session);
                     DB.save(db);
+                } else if (!session.isClosed) {
+                    let changed = false;
+                    if (session.startTime !== g.start) { session.startTime = g.start; changed = true; }
+                    if (session.endTime !== g.endTime) { session.endTime = g.endTime; changed = true; }
+                    if (changed) DB.save(db);
                 }
 
+                // Session Info Bar
+                const infoContainer = document.getElementById('session-info-container');
+                if (infoContainer) {
+                    infoContainer.innerHTML = `
+                        <div class="session-info-bar">
+                            <div><i data-lucide="clock" style="width:14px; height:14px; vertical-align:middle;"></i> ${session.startTime} - ${session.endTime}</div>
+                            <div class="badge ${session.isClosed ? 'badge-success' : 'badge-warning'}">${session.isClosed ? 'YOPILGAN' : 'OCHIQ'}</div>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
 
                 const gMembers = db.group_members.filter(x => x.groupId === gid).map(x => x.studentId);
-                const mems = db.students.filter(x => gMembers.includes(x.id)); // status: 'active' check removed to see frozen
+                const students = db.students.filter(x => gMembers.includes(x.id) && x.status === 'active');
 
-                // Render list
-                document.getElementById('att-setup').innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                        <h2 style="text-align:left;">${g.name} (${date})</h2>
-                        <div style="display:flex; gap:1rem;">
-                            <button onclick="Engine.navigate('attendance')" class="btn btn-ghost btn-sm">Orqaga</button>
-                        </div>
-                    </div>
-                    <div class="table-container" style="text-align:left;">
-                        <table>
-                            <thead><tr><th>O'quvchi</th><th>Holat</th><th>Amal</th></tr></thead>
-                            <tbody>
-                                ${mems.map(s => {
+                const listContainer = document.getElementById('student-list');
+                if (!listContainer) return;
+
+                if (students.length === 0) {
+                    listContainer.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-dim);">Bu guruhda o'quvchilar yo'q</div>`;
+                    return;
+                }
+
+                listContainer.innerHTML = students.map(s => {
                     const att = db.attendance_records.find(a => a.sessionId === session.id && a.studentId === s.id);
-                    const freeze = (db.freeze || []).find(f => f.studentId === s.id && f.groupId === gid && f.status === 'FROZEN' && date >= f.freezeFrom && (!f.freezeTo || date <= f.freezeTo));
+                    const status = att ? att.status : 'BELGILANMAGAN';
 
-                    let statusHtml = '';
-                    let actionHtml = '';
-
-                    if (freeze) {
-                        statusHtml = `<span class="badge badge-warning">MUZLATILGAN</span>`;
-                        actionHtml = `<button disabled class="btn btn-ghost btn-sm" style="opacity:0.5; cursor:not-allowed;">Muzlatilgan</button>`;
-                    } else if (att) {
-                        statusHtml = `<span class="badge ${att.status === 'KELDI' ? 'badge-success' : att.status === 'KECHIKDI' ? 'badge-warning' : 'badge-danger'}">${att.status}</span> <br><small>${att.checkInTime || ''}</small>`;
-                        actionHtml = `<button onclick="Actions.editMark('${session.id}', '${s.id}')" class="btn btn-ghost btn-sm">✏️ Tahrirlash</button>`;
-                    } else {
-                        statusHtml = `<span style="color:var(--text-dim)">Belgilanmagan</span>`;
-                        actionHtml = `
-                            <div style="display:flex; gap:0.4rem;">
-                                <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELDI')" class="btn btn-primary btn-sm">KELDI</button>
-                                <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KECHIKDI')" class="btn btn-ghost btn-sm">KECHIKDI</button>
-                                <button onclick="Actions.applyMark('${session.id}', '${s.id}', 'KELMADI')" class="btn btn-danger btn-sm">KELMADI</button>
+                    return `
+                        <div class="student-card" id="card-${s.id}">
+                            <div class="student-card-top">
+                                <div>
+                                    <div class="student-name">${s.name} ${s.surname}</div>
+                                    <div class="student-code">${s.studentCode || 'ID: ' + s.id.slice(0, 8)}</div>
+                                </div>
+                                <div id="badge-${s.id}" class="badge ${status === 'KELDI' ? 'badge-success' : status === 'KECHIKDI' ? 'badge-warning' : status === 'KELMADI' ? 'badge-danger' : ''}" style="${status === 'BELGILANMAGAN' ? 'display:none' : ''}">
+                                    ${status}
+                                </div>
                             </div>
-                        `;
-                    }
-                    return `<tr><td data-label="O'quvchi"><strong>${s.name} ${s.surname}</strong></td><td data-label="Holat">${statusHtml}</td><td data-label="Amal">${actionHtml}</td></tr>`;
-                }).join('') || '<tr><td colspan="3" style="text-align:center; padding:2rem">Bu guruhda o\'quvchi yo\'q</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                            <div class="att-buttons">
+                                <button onclick="Actions.markStudent('${session.id}', '${s.id}', 'KELDI')" class="btn-att ${status === 'KELDI' ? 'active-keldi' : ''}" id="btn-keldi-${s.id}">
+                                    <span>✅</span>
+                                    <span>KELDI</span>
+                                </button>
+                                <button onclick="Actions.markStudent('${session.id}', '${s.id}', 'KECHIKDI')" class="btn-att ${status === 'KECHIKDI' ? 'active-kechikdi' : ''}" id="btn-kechikdi-${s.id}">
+                                    <span>🟨</span>
+                                    <span>KECHIKDI</span>
+                                </button>
+                                <button onclick="Actions.markStudent('${session.id}', '${s.id}', 'KELMADI')" class="btn-att ${status === 'KELMADI' ? 'active-kelmadi' : ''}" id="btn-kelmadi-${s.id}">
+                                    <span>❌</span>
+                                    <span>KELMADI</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             },
 
-            applyMark(sessionId, studentId, status, isJustified = false, note = '') {
+            switchAttTab(tab) {
+                document.getElementById('tab-manual').classList.toggle('active', tab === 'manual');
+                document.getElementById('tab-faceid').classList.toggle('active', tab === 'faceid');
+                document.getElementById('manual-content').style.display = tab === 'manual' ? 'block' : 'none';
+                document.getElementById('faceid-content').style.display = tab === 'faceid' ? 'block' : 'none';
+
+                if (tab === 'faceid') {
+                    FaceID.start();
+                } else {
+                    FaceID.stop(false);
+                }
+            },
+
+            markStudent(sessionId, studentId, status) {
+                const db = DB.get();
+                const session = db.sessions.find(x => x.id === sessionId);
+                if (session.isClosed && Engine.user.role !== 'BOSHADMIN') {
+                    return Swal.fire('Taqiq', 'Bu dars yakunlangan! Faqat Bosh Admin o\'zgartira oladi.', 'warning');
+                }
+
                 if (status === 'KELMADI') {
                     Swal.fire({
                         title: 'Kelmadi',
                         html: `
-                            <label>Izoh/Sabab</label>
-                            <input id="sabab-input" class="form-control" placeholder="Masalan: Kasal edi...">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                                <button id="sw-sababli" class="btn btn-ghost" style="flex-direction:column; gap:0.5rem; height:80px; border:2px solid var(--border);" onclick="this.parentElement.dataset.type='SABABLI'; this.style.borderColor='var(--success)'; document.getElementById('sw-sababsiz').style.borderColor='var(--border)';">
+                                    <span style="font-size:1.5rem">📝</span>
+                                    <span>Sababli</span>
+                                </button>
+                                <button id="sw-sababsiz" class="btn btn-ghost" style="flex-direction:column; gap:0.5rem; height:80px; border:2px solid var(--border);" onclick="this.parentElement.dataset.type='SABABSIZ'; this.style.borderColor='var(--danger)'; document.getElementById('sw-sababli').style.borderColor='var(--border)';">
+                                    <span style="font-size:1.5rem">🚫</span>
+                                    <span>Sababsiz</span>
+                                </button>
+                            </div>
+                            <input id="sw-reason-text" class="form-control" placeholder="Sabab (ixtiyoriy)">
                         `,
                         showCancelButton: true,
-                        confirmButtonText: 'Sababli',
-                        cancelButtonText: 'Sababsiz'
+                        confirmButtonText: 'Saqlash',
+                        cancelButtonText: 'Bekor',
+                        didOpen: () => {
+                            // Default to SABABSIZ
+                            document.getElementById('sw-sababsiz').click();
+                        },
+                        preConfirm: () => {
+                            const type = document.querySelector('[data-type]').dataset.type;
+                            const reason = document.getElementById('sw-reason-text').value;
+                            return { type, reason };
+                        }
                     }).then(r => {
-                        if (r.dismiss === Swal.DismissReason.backdrop || r.dismiss === Swal.DismissReason.esc) return;
-                        Actions.saveMark(sessionId, studentId, status, r.isConfirmed, document.getElementById('sabab-input')?.value || '');
+                        if (r.isConfirmed) {
+                            Actions.saveMark(sessionId, studentId, 'KELMADI', r.value.type, r.value.reason);
+                        }
                     });
                 } else {
-                    Actions.saveMark(sessionId, studentId, status, isJustified, note);
+                    Actions.saveMark(sessionId, studentId, status);
                 }
             },
 
-            editMark(sessionId, sid) {
-                const db = DB.get();
-                const att = db.attendance_records.find(a => a.sessionId === sessionId && a.studentId === sid);
-                if (!att) return;
-
-                Swal.fire({
-                    title: 'Davomatni tahrirlash',
-                    html: `
-                        <div style="text-align:left;">
-                            <label>Vaqt (HH:MM)</label>
-                            <input id="edit-time" type="time" class="form-control" value="${att.checkInTime || ''}">
-                            <label style="margin-top:1rem;">Holat (Ixtiyoriy, tanlamasangiz vaqtga qarab aniqlanadi)</label>
-                            <select id="edit-status" class="form-control">
-                                <option value="">Vaqt bo'yicha aniqlash</option>
-                                <option value="KELDI" ${att.status === 'KELDI' ? 'selected' : ''}>KELDI (5 coin)</option>
-                                <option value="KECHIKDI" ${att.status === 'KECHIKDI' ? 'selected' : ''}>KECHIKDI (3 coin)</option>
-                                <option value="KELMADI" ${att.status === 'KELMADI' ? 'selected' : ''}>KELMADI (0 coin)</option>
-                            </select>
-                            <label style="margin-top:1rem;">Sabab/Izoh (KELMADI bo'lsa)</label>
-                            <input id="edit-note" class="form-control" value="${att.note || ''}" placeholder="Masalan: Kasal edi...">
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Saqlash',
-                    cancelButtonText: 'Bekor',
-                    preConfirm: () => {
-                        return {
-                            status: document.getElementById('edit-status').value,
-                            note: document.getElementById('edit-note').value,
-                            time: document.getElementById('edit-time').value
-                        };
-                    }
-                }).then(r => {
-                    if (r.isConfirmed) {
-                        Actions.saveMark(sessionId, sid, r.value.status, r.value.status === 'KELMADI', r.value.note, r.value.time);
-                    }
-                });
-            },
-
-            saveMark(sessionId, studentId, status, isJustified, note, checkInTime = null) {
+            saveMark(sessionId, studentId, status, absenceType = '', absenceReason = '', checkInTime = null) {
                 const db = DB.get();
                 const session = db.sessions.find(x => x.id === sessionId);
                 if (!session) return;
 
+                // UI Optimistic Update (if we are on the attendance page)
+                const badge = document.getElementById(`badge-${studentId}`);
+                if (badge) {
+                    badge.innerText = status;
+                    badge.className = `badge ${status === 'KELDI' ? 'badge-success' : status === 'KECHIKDI' ? 'badge-warning' : 'badge-danger'}`;
+                    badge.style.display = 'block';
+
+                    document.getElementById(`btn-keldi-${studentId}`)?.classList.toggle('active-keldi', status === 'KELDI');
+                    document.getElementById(`btn-kechikdi-${studentId}`)?.classList.toggle('active-kechikdi', status === 'KECHIKDI');
+                    document.getElementById(`btn-kelmadi-${studentId}`)?.classList.toggle('active-kelmadi', status === 'KELMADI');
+                }
+
                 const existingAtt = db.attendance_records.find(a => a.sessionId === sessionId && a.studentId === studentId);
-                let oldCoins = 0;
-                if (existingAtt) {
-                    if (existingAtt.status === 'KELDI') oldCoins = 5;
-                    else if (existingAtt.status === 'KECHIKDI') oldCoins = 3;
-                }
 
-                // Time logic
-                const now = new Date();
-                const timeStr = checkInTime || now.toTimeString().slice(0, 5);
-                let finalStatus = status;
-
-                if (!finalStatus) { // If status is not explicitly provided (e.g., from FaceID or 'Vaqt bo'yicha aniqlash')
-                    const nowMin = Utils.timeToMin(timeStr);
-                    const startMin = Utils.timeToMin(session.startTime);
-                    const endMin = Utils.timeToMin(session.endTime);
-
-                    if (nowMin <= startMin) finalStatus = 'KELDI';
-                    else if (nowMin <= endMin) finalStatus = 'KECHIKDI';
-                    else finalStatus = 'KELMADI';
-                }
-
-                let newCoins = 0;
-                if (finalStatus === 'KELDI') newCoins = 5;
-                else if (finalStatus === 'KECHIKDI') newCoins = 3;
-
+                const getPoints = (st) => (st === 'KELDI' ? 5 : st === 'KECHIKDI' ? 3 : 0);
+                const oldCoins = existingAtt ? getPoints(existingAtt.status) : 0;
+                const newCoins = getPoints(status);
                 const diff = newCoins - oldCoins;
 
+                const timeStr = checkInTime || new Date().toTimeString().slice(0, 5);
+
+                const attData = {
+                    sessionId,
+                    studentId,
+                    status,
+                    absenceType,
+                    absenceReason,
+                    checkInTime: timeStr,
+                    timestamp: Date.now()
+                };
+
                 if (existingAtt) {
-                    existingAtt.status = finalStatus;
-                    existingAtt.isJustified = isJustified;
-                    existingAtt.note = note;
-                    existingAtt.checkInTime = timeStr;
-                    existingAtt.timestamp = Date.now();
+                    Object.assign(existingAtt, attData);
                 } else {
-                    db.attendance_records.push({
-                        id: crypto.randomUUID(), sessionId, studentId, timestamp: Date.now(), status: finalStatus, isJustified, note, coinsApplied: false, checkInTime: timeStr
-                    });
+                    db.attendance_records.push({ id: crypto.randomUUID(), ...attData });
                 }
 
                 if (diff !== 0) {
@@ -1711,14 +1879,98 @@
                         amount: diff,
                         date: Date.now(),
                         type: 'ATTENDANCE_ADJUST',
-                        note: `Davomat tahriri (${session.date}): ${finalStatus}`
+                        note: `Davomat: ${status} (${session.date})`
                     });
                     Actions.recalcPoints(studentId, db);
                 }
 
+                // If it was KELMADI and SABABLI, create absence record
+                if (status === 'KELMADI' && absenceType === 'SABABLI') {
+                    if (!db.absences) db.absences = [];
+                    if (!db.absences.find(x => x.sessionId === sessionId && x.studentId === studentId)) {
+                        db.absences.push({
+                            id: crypto.randomUUID(),
+                            sessionId,
+                            studentId,
+                            date: session.date,
+                            status: 'OPEN',
+                            note: absenceReason
+                        });
+                    }
+                } else if (db.absences) {
+                    db.absences = db.absences.filter(x => !(x.sessionId === sessionId && x.studentId === studentId));
+                }
+
                 DB.save(db);
-                Actions.manualAttendance();
-                TGBot.notifyAttendance(studentId, finalStatus, db, note ? `🔔 Izoh: ${note}` : '');
+
+                // Notify using the saved data as source of truth
+                TGBot.notifyAttendance(studentId, sessionId, db, absenceReason || 'Manual');
+            },
+
+            finishSession() {
+                const gid = document.getElementById('att-gid').value;
+                const date = document.getElementById('att-date').value;
+                const db = DB.get();
+                const session = db.sessions.find(s => s.groupId === gid && s.date === date);
+                if (!session) return;
+
+                if (session.isClosed) return Swal.fire('Dars yopilgan', 'Ushbu dars allaqachon yakunlangan.', 'info');
+
+                const gMembers = db.group_members.filter(x => x.groupId === gid).map(x => x.studentId);
+                const students = db.students.filter(x => gMembers.includes(x.id) && x.status === 'active');
+
+                const unmarked = students.filter(s => !db.attendance_records.find(a => a.sessionId === session.id && a.studentId === s.id));
+
+                if (unmarked.length > 0) {
+                    Swal.fire({
+                        title: 'Kelmaganlarni tasdiqlash',
+                        html: `
+                            <p style="margin-bottom:1rem; font-size:0.9rem; color:var(--text-dim);">${unmarked.length} ta o'quvchi belgilanmagan. Ularni "KELMADI" deb belgilash:</p>
+                            <div id="unmarked-list" style="max-height:40vh; overflow-y:auto; text-align:left;">
+                                ${unmarked.map(s => `
+                                    <div class="card" style="padding:0.8rem; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+                                        <span>${s.name}</span>
+                                        <select class="form-control unmarked-select" data-sid="${s.id}" style="width:120px; margin-top:0; padding:0.4rem;">
+                                            <option value="SABABSIZ">Sababsiz</option>
+                                            <option value="SABABLI">Sababli</option>
+                                        </select>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Hammasini saqlash va yopish',
+                    }).then(r => {
+                        if (r.isConfirmed) {
+                            const selects = document.querySelectorAll('.unmarked-select');
+                            selects.forEach(sel => {
+                                const sid = sel.dataset.sid;
+                                const type = sel.value;
+                                Actions.saveMark(session.id, sid, 'KELMADI', type, 'Dars yakunida avto-belgilash');
+                            });
+
+                            session.isClosed = true;
+                            DB.save(DB.get()); // Reload from DB.get() just in case
+                            Swal.fire('Yakunlandi', 'Dars muvaffaqiyatli yakunlandi.', 'success');
+                            Actions.refreshAttendanceView();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Yakunlansinmi?',
+                        text: 'Barcha o\'quvchilar belgilangan. Darsni yopmoqchimisiz?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ha, dars tugadi',
+                    }).then(r => {
+                        if (r.isConfirmed) {
+                            session.isClosed = true;
+                            DB.save(db);
+                            Swal.fire('Yakunlandi', 'Dars muvaffaqiyatli yakunlandi.', 'success');
+                            Actions.refreshAttendanceView();
+                        }
+                    });
+                }
             },
 
             recalcPoints(sid, db) {
@@ -2015,7 +2267,7 @@
             },
         };
 
-        // --- FACE ID CORE ENGINE (OPTIMIZED) ---
+        // --- FACE ID CORE ENGINE (ULTRA OPTIMIZED) ---
         const FaceID = {
             active: false,
             stream: null,
@@ -2023,18 +2275,6 @@
             candidates: [],
             currentSessionId: null,
             lastRecognized: {},
-            lastCapturedBase64: null,
-            identifyTimeout: null,
-
-            updateDiag(key, val, isBool = false) {
-                const el = document.getElementById(`diag-${key}`);
-                if (!el) return;
-                el.innerText = val === null || val === undefined ? '-' : val;
-                if (isBool) {
-                    el.classList.toggle('true', val === true || val === 'true');
-                    el.classList.toggle('false', val === false || val === 'false');
-                }
-            },
 
             async start() {
                 const gid = document.getElementById('att-gid')?.value;
@@ -2043,185 +2283,136 @@
 
                 const db = DB.get();
                 const g = db.groups.find(x => x.id === gid);
+                if (!g) return;
+
                 let session = db.sessions.find(x => x.groupId === gid && x.date === date);
                 if (!session) {
                     session = { id: crypto.randomUUID(), groupId: gid, date: date, startTime: g.start, endTime: g.endTime, isClosed: false };
                     db.sessions.push(session);
                     DB.save(db);
+                } else if (!session.isClosed) {
+                    let changed = false;
+                    if (session.startTime !== g.start) { session.startTime = g.start || ''; changed = true; }
+                    if (session.endTime !== g.endTime) { session.endTime = g.endTime || ''; changed = true; }
+                    if (changed) DB.save(db);
                 }
+
                 if (session.isClosed && Engine.user.role !== 'BOSHADMIN') return Swal.fire('Taqiq', 'Bu dars yakunlangan!', 'warning');
 
                 this.currentSessionId = session.id;
 
-                // Candidates Logic
-                const members = db.group_members.filter(m => m.groupId === gid);
-                const students = db.students.filter(s => members.some(m => m.studentId === s.id) && s.status === 'active');
-                this.candidates = students.filter(s => s.faceImg && s.faceImg.length > 100);
-                this.updateDiag('candidates', this.candidates.length);
-
-                if (this.candidates.length > 25) {
-                    Swal.fire({
-                        title: 'Guruh juda katta!',
-                        text: `Guruhda ${this.candidates.length} ta o'quvchi bor. FaceID sekinlashishi mumkin.`,
-                        icon: 'warning',
-                        confirmButtonText: 'Tushunarlidir'
-                    });
+                // Load models with UI
+                if (!Engine.faceModelsLoaded) {
+                    document.getElementById('att-status').innerText = 'AI Modellar yuklanmoqda...';
+                    await Engine.loadFaceModels();
                 }
+
+                // Cache candidates for this group
+                const members = db.group_members.filter(m => m.groupId === gid).map(m => m.studentId);
+                this.candidates = db.students
+                    .filter(s => members.includes(s.id) && s.status === 'active' && s.faceData)
+                    .map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        surname: s.surname,
+                        descriptor: new Float32Array(s.faceData)
+                    }));
 
                 const noFaceList = document.getElementById('no-face-list');
                 if (this.candidates.length === 0) {
                     noFaceList.style.display = 'block';
-                    const noFaceStudents = students.filter(s => !s.faceImg || s.faceImg.length < 100);
-                    document.getElementById('no-face-names').innerHTML = noFaceStudents.length > 0 ?
-                        noFaceStudents.map(s => `• ${s.name} ${s.surname} (kod: ${s.studentCode || 'yo\'q'}) <button onclick="FaceID.stop(); Actions.viewProfile('${s.id}')" class="btn btn-ghost btn-sm" style="padding:2px 5px; font-size:10px;">Ro'yxatdan o'tkazish</button>`).join('<br>') :
-                        'Guruhda o‘zi o‘quvchi yo‘q';
+                    const list = db.students.filter(s => members.includes(s.id) && !s.faceData);
+                    document.getElementById('no-face-names').innerHTML = list.length > 0 ?
+                        list.map(s => `• ${s.name} ${s.surname}`).join('<br>') : 'Guruhda o‘quvchilar yo‘q';
                 } else {
                     noFaceList.style.display = 'none';
                 }
 
-                // UI setup
-                document.getElementById('att-setup').style.display = 'none';
                 document.getElementById('att-scan').style.display = 'block';
-                document.getElementById('manual-fallback').style.display = 'none';
                 this.active = true;
-                this.updateDiag('cam', this.mode);
 
-                // Non-blocking Camera Start
                 const vid = document.getElementById('att-video');
                 const statusEl = document.getElementById('att-status');
-                statusEl.innerHTML = '<span style="color:var(--primary)">Kamera kutilmoqda...</span>';
+                statusEl.innerHTML = '<span style="color:var(--primary)">Kamera ishga tushmoqda...</span>';
 
-                const constraints = [
-                    { video: { facingMode: this.mode, width: { ideal: 1280 }, height: { ideal: 720 } } },
-                    { video: { facingMode: this.mode } },
-                    { video: true }
-                ];
-
-                (async () => {
-                    let success = false;
-                    for (let c of constraints) {
-                        if (!this.active) break;
-                        try {
-                            const stream = await navigator.mediaDevices.getUserMedia(c);
-                            vid.srcObject = stream;
-                            this.stream = stream;
-
-                            const vw = await new Promise((resolve) => {
-                                let attempts = 0;
-                                const check = setInterval(() => {
-                                    attempts++;
-                                    if (vid.videoWidth > 0) { clearInterval(check); resolve(vid.videoWidth); }
-                                    if (attempts > 20) { clearInterval(check); resolve(0); }
-                                }, 100);
-                            });
-
-                            if (vw > 0) {
-                                success = true;
-                                await vid.play();
-                                statusEl.innerHTML = '<span style="color:var(--success)">Kamera tayyor.</span>';
-                                this.updateDiag('res', `${vid.videoWidth}x${vid.videoHeight}`);
-                                break;
-                            } else {
-                                stream.getTracks().forEach(t => t.stop());
-                            }
-                        } catch (e) { console.warn("Cam fail", e); }
-                    }
-                    if (!success && this.active) {
-                        statusEl.innerHTML = '<span style="color:var(--danger)">Kamera yoqilmadi!</span>';
-                    }
-                })();
-
-                this.updateDiag('https', location.protocol === 'https:', true);
-                this.updateDiag('iframe', window.self !== window.top, true);
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: this.mode,
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    });
+                    vid.srcObject = stream;
+                    this.stream = stream;
+                    await vid.play();
+                    statusEl.innerHTML = '<span style="color:var(--success)">Skanerlashga tayyor.</span>';
+                } catch (e) {
+                    statusEl.innerHTML = '<span style="color:var(--danger)">Kamera yoqilmadi!</span>';
+                }
             },
 
             async identify() {
                 if (!this.active || !this.stream) return;
+
                 const btn = document.getElementById('btn-identify');
                 const statusEl = document.getElementById('att-status');
                 const nameEl = document.getElementById('att-name');
                 const vid = document.getElementById('att-video');
 
-                if (btn.disabled) return;
                 btn.disabled = true;
-                statusEl.innerHTML = '<span style="color:var(--primary)">Yuz tekshirilmoqda...</span>';
-                this.updateDiag('last-req', new Date().toLocaleTimeString());
-
-                if (this.identifyTimeout) clearTimeout(this.identifyTimeout);
-                this.identifyTimeout = setTimeout(() => {
-                    if (btn.disabled) {
-                        statusEl.innerHTML = '<span style="color:var(--danger)">Juda sekin ishlayapti, qayta urinib ko\'ring</span>';
-                        btn.disabled = false;
-                    }
-                }, 8000);
+                statusEl.innerHTML = '<span style="color:var(--primary)">Qidirilmoqda...</span>';
 
                 try {
-                    const targetWidth = 480;
-                    const scale = targetWidth / vid.videoWidth;
-                    const canvas = document.createElement('canvas');
-                    canvas.width = targetWidth;
-                    canvas.height = vid.videoHeight * scale;
-                    const ctx = canvas.getContext('2d');
-                    if (this.mode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-                    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+                    // Use TinyFaceDetector for speed on mobile
+                    const detection = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+                        .withFaceLandmarks()
+                        .withFaceDescriptor();
 
-                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
-                    this.lastCapturedBase64 = base64;
-
-                    const detection = await faceapi.detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }));
                     if (!detection) {
-                        statusEl.innerHTML = '<span style="color:var(--danger)">YUZ ANIQLANMADI. Kameraga yaxshilab qarang.</span>';
-                        clearTimeout(this.identifyTimeout);
+                        statusEl.innerHTML = '<span style="color:var(--danger)">Yuz aniqlanmadi</span>';
                         btn.disabled = false;
                         return;
                     }
 
-                    const payload = { targetImageBase64: base64, candidates: this.candidates.map(s => ({ studentId: s.id, facePhotoBase64: s.faceImg })) };
-                    this.updateDiag('last-res', 'Skanerlash...');
-                    const result = await this.mockIdentifyRequest(payload);
-                    this.updateDiag('last-res', JSON.stringify(result));
+                    // Quality check: size
+                    const box = detection.detection.box;
+                    if (box.width < 80) {
+                        statusEl.innerHTML = '<span style="color:var(--warning)">Yaqinroq keling</span>';
+                        btn.disabled = false;
+                        return;
+                    }
 
-                    clearTimeout(this.identifyTimeout);
+                    let bestMatch = null;
+                    let minDistance = 0.5; // Threshold
 
-                    if (result.match && result.studentId) {
-                        const lastTime = this.lastRecognized[result.studentId] || 0;
-                        if (Date.now() - lastTime < 10000) {
-                            statusEl.innerHTML = '<span style="color:var(--warning)">Cooldown: Biroz kuting...</span>';
-                            btn.disabled = false;
-                            return;
+                    for (let s of this.candidates) {
+                        const distance = faceapi.euclideanDistance(detection.descriptor, s.descriptor);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            bestMatch = s;
                         }
-                        const student = this.candidates.find(s => s.id === result.studentId);
-                        if (student) {
-                            this.lastRecognized[student.id] = Date.now();
-                            this.processMatch(student);
-                        } else { this.processUnknown(); }
-                    } else { this.processUnknown(); }
+                    }
+
+                    if (bestMatch && minDistance < 0.45) {
+                        const lastRecognizedTime = this.lastRecognized[bestMatch.id] || 0;
+                        if (Date.now() - lastRecognizedTime > 5000) {
+                            this.processMatch(bestMatch);
+                            this.lastRecognized[bestMatch.id] = Date.now();
+                        } else {
+                            statusEl.innerHTML = `<span style="color:var(--warning)">Biroz kuting...</span>`;
+                        }
+                    } else {
+                        statusEl.innerHTML = '<span style="color:var(--danger)">NOTANISH / UNKNOWN</span>';
+                        nameEl.innerText = '';
+                    }
+
                 } catch (e) {
-                    console.error(e);
-                    clearTimeout(this.identifyTimeout);
-                    this.updateDiag('error', e.message);
-                    this.showManualFallback();
+                    console.error("ID Error", e);
+                    statusEl.innerText = 'Xato yuz berdi';
                 }
+
                 btn.disabled = false;
-            },
-
-            async mockIdentifyRequest(payload) {
-                await new Promise(r => setTimeout(r, 600));
-                const vid = document.getElementById('att-video');
-                const fullDet = await faceapi.detectSingleFace(vid).withFaceLandmarks().withFaceDescriptor();
-                if (!fullDet) return { match: false, status: 'UNKNOWN' };
-
-                let bestMatch = null;
-                let minDistance = 0.6;
-                for (let s of this.candidates) {
-                    if (!s.faceData) continue;
-                    const distance = faceapi.euclideanDistance(fullDet.descriptor, new Float32Array(s.faceData));
-                    if (distance < minDistance) { minDistance = distance; bestMatch = s; }
-                }
-                if (bestMatch && minDistance < 0.55) {
-                    return { match: true, studentId: bestMatch.id, confidence: (1 - minDistance).toFixed(2) };
-                }
-                return { match: false, status: 'UNKNOWN' };
             },
 
             processMatch(student) {
@@ -2229,71 +2420,48 @@
                 const nameEl = document.getElementById('att-name');
                 const db = DB.get();
                 const session = db.sessions.find(s => s.id === this.currentSessionId);
-                // Time logic
+                if (!session) return;
+
+                // Freeze Check
                 const now = new Date();
                 const nowStr = now.toISOString().split('T')[0];
-                const nowTimeStr = now.toTimeString().slice(0, 5);
-                const nowMin = Utils.timeToMin(nowTimeStr);
-                const startMin = Utils.timeToMin(session.startTime);
-                const endMin = Utils.timeToMin(session.endTime);
+                const freeze = (db.freeze || []).find(f =>
+                    f.studentId === student.id &&
+                    f.groupId === session.groupId &&
+                    f.status === 'FROZEN' &&
+                    nowStr >= f.freezeFrom && (!f.freezeTo || nowStr <= f.freezeTo)
+                );
 
-                if (!session.startTime || !session.endTime) {
-                    statusEl.innerHTML = '<span style="color:var(--danger)">Session vaqtini tekshiring!</span>';
-                    return;
-                }
-
-                // Check Freeze
-                const freeze = (db.freeze || []).find(f => f.studentId === student.id && f.groupId === session.groupId && f.status === 'FROZEN' && nowStr >= f.freezeFrom && (!f.freezeTo || nowStr <= f.freezeTo));
                 if (freeze) {
-                    statusEl.innerHTML = `<span style="color:var(--warning)">MUZLATILGAN: ${student.name}</span>`;
+                    statusEl.innerHTML = `<span style="color:var(--warning)">🛑 MUZLATILGAN: ${student.name}</span>`;
                     nameEl.innerText = student.name + ' ' + student.surname;
                     return;
                 }
 
-                let finalStatus = 'KELDI';
-                if (nowMin > endMin) finalStatus = 'KELMADI';
-                else if (nowMin > startMin) finalStatus = 'KECHIKDI';
+                // Unified status calculation
+                const nowTimeStr = now.toTimeString().slice(0, 5);
+                const group = db.groups.find(g => g.id === session.groupId);
+                const startTime = session.startTime || group?.start || '00:00';
+                const endTime = session.endTime || group?.endTime || '23:59';
 
-                this.updateDiag('last-decision', finalStatus);
+                const finalStatus = Utils.getAttStatus(nowTimeStr, startTime, endTime);
 
+                // Check double attendance
                 const existing = db.attendance_records.find(a => a.sessionId === session.id && a.studentId === student.id);
-                if (existing) {
-                    statusEl.innerHTML = `<span style="color:var(--warning)">${student.name} avval belgilangan!</span>`;
+                if (existing && existing.status !== 'BELGILANMAGAN') {
+                    statusEl.innerHTML = `<span style="color:var(--warning)">${student.name} avval belgilangan</span>`;
                     nameEl.innerText = student.name + ' ' + student.surname;
                     return;
                 }
 
                 statusEl.innerHTML = `<span style="color:var(--success)">✅ TANILDI: ${finalStatus}</span>`;
                 nameEl.innerText = student.name + ' ' + student.surname;
-                Actions.saveMark(session.id, student.id, finalStatus, true, 'FaceID');
-                confetti({ particleCount: 50, spread: 80, origin: { y: 0.7 } });
-            },
 
-            processUnknown() {
-                document.getElementById('att-status').innerHTML = '<span style="color:var(--danger)">Tanimadim</span>';
-                this.updateDiag('last-decision', 'NOMA\'LUM');
-                this.showManualFallback();
-            },
+                Actions.saveMark(session.id, student.id, finalStatus, '', 'FaceID', nowTimeStr);
+                confetti({ particleCount: 70, spread: 100, origin: { y: 0.7 } });
 
-            showManualFallback() {
-                const zone = document.getElementById('manual-fallback');
-                const sel = document.getElementById('manual-student-select');
-                const db = DB.get();
-                const session = db.sessions.find(s => s.id === this.currentSessionId);
-                const members = db.group_members.filter(m => m.groupId === session.groupId);
-                const students = db.students.filter(s => members.some(m => m.studentId === s.id) && s.status === 'active');
-
-                sel.innerHTML = '<option value="">O‘quvchini tanlang...</option>' +
-                    students.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
-                zone.style.display = 'block';
-            },
-
-            confirmManual() {
-                const sid = document.getElementById('manual-student-select').value;
-                if (!sid) return;
-                const student = DB.get().students.find(s => s.id === sid);
-                if (student) this.processMatch(student);
-                document.getElementById('manual-fallback').style.display = 'none';
+                // Audio feedback (if available)
+                try { new Audio('https://www.soundjay.com/buttons/button-11.mp3').play(); } catch (e) { }
             },
 
             toggleCam() {
@@ -2310,9 +2478,7 @@
                 }
                 if (showSetup) {
                     document.getElementById('att-scan').style.display = 'none';
-                    document.getElementById('att-setup').style.display = 'block';
                 }
-                document.getElementById('iframe-warn').style.display = 'none';
             },
 
             async enroll(sid) {
@@ -2367,7 +2533,10 @@
                             const canvas = document.createElement('canvas');
                             canvas.width = 480; canvas.height = v.videoHeight * (480 / v.videoWidth);
                             canvas.getContext('2d').drawImage(v, 0, 0, canvas.width, canvas.height);
-                            const vInfo = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                            // Use TinyFaceDetector for enrollment consistency
+                            const vInfo = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+                                .withFaceLandmarks()
+                                .withFaceDescriptor();
                             if (!vInfo) { Swal.showValidationMessage('Yuz aniqlanmadi'); return false; }
                             const faces = await faceapi.extractFaces(canvas, [vInfo.detection.box]);
                             return { descriptor: Array.from(vInfo.descriptor), img: faces[0]?.toDataURL('image/jpeg', 0.8) };
